@@ -35,6 +35,9 @@
     <ClInclude Include="..\camera.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\libraries\Model.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\main.cpp">
