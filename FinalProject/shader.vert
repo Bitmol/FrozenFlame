@@ -2,12 +2,13 @@
 
 // Model/view/projection matrix
 layout(location = 0) uniform mat4 mvp;
-layout(location = 6) uniform float mixFactor_idle;
-layout(location = 7) uniform float mixFactor_attack;
-layout(location = 8) uniform float mixFactor_dead;
-layout(location = 10) uniform vec3 pos_offset;
-layout(location = 11) uniform vec3 rotateAxis;
-layout(location = 12) uniform float rotateAngle;
+layout(location = 6) uniform float mixFactor_idle = 0.0;
+layout(location = 7) uniform float mixFactor_attack = 0.0;
+layout(location = 8) uniform float mixFactor_dead = 0.0;
+layout(location = 10) uniform vec3 pos_offset = vec3(0, 0, 0);
+layout(location = 11) uniform vec3 rotateAxis = vec3(0, 1, 0);
+layout(location = 12) uniform float rotateAngle = 0.0;
+layout(location = 13) uniform float scaleFactor = 1.0;
 
 
 // Per-vertex attributes
@@ -57,6 +58,7 @@ void main() {
 	pos_current = mix(pos_current, pos_dead, mixFactor_dead);
 	normal_current = mix(normal_current, normal_dead, mixFactor_dead);
 
+	pos_current = mat3(scaleFactor)*pos_current;
 	
 	tmp = rMatrix * vec4(pos_current, 1.0);
 	pos_current = tmp.xyz;

@@ -18,6 +18,8 @@
     <None Include="..\shader.vert" />
     <None Include="..\shadow.frag" />
     <None Include="..\shadow.vert" />
+    <None Include="..\terrain.frag" />
+    <None Include="..\terrain.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\camera.h" />
