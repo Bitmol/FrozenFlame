@@ -102,6 +102,7 @@ public:
 		glActiveTexture(GL_TEXTURE0 + textureNumber);
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glUniform1i(glGetUniformLocation(program, "tex"), textureNumber);
+		glUniform1f(glGetUniformLocation(program, "useShadow"), false);
 
 	}
 	glm::vec2 getScreenCoor(Camera camera)
@@ -224,6 +225,12 @@ public:
 
 		computeShadow(lightDir);
 		generateTriangles();
+	}
+	void passUniform(GLuint program)
+	{
+		Model::passUniform(program);
+
+		glUniform1f(glGetUniformLocation(program, "useShadow"), true);
 	}
 
 	void calculateNormals()

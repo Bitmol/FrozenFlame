@@ -7,6 +7,7 @@ layout(location = 3) uniform float time;
 layout(location = 4) uniform mat4 lightMVP;
 layout(location = 5) uniform vec3 lightPos = vec3(3,3,3);
 layout(location = 9) uniform sampler2D tex;
+layout(location = 14) uniform bool useShadow = false;
 
 // Output for on-screen color
 layout(location = 0) out vec4 outColor;
@@ -24,9 +25,13 @@ void main() {
 
 	float diffuse = max(dot(fragNormal, lightDir), 0.0);
 	vec4 color = texture(tex, vec2(fragTexCoor.x, 1.0-fragTexCoor.y));
-	color.x *= fragShadow.x;
-	color.y *= fragShadow.y;
-	color.z *= fragShadow.z;
+	if(useShadow == true)
+	{
+		color.x *= fragShadow.x;
+		color.y *= fragShadow.y;
+		color.z *= fragShadow.z;
+	}
+	
 	outColor = vec4(color.xyz, 1.0);
 //    outColor = vec4(color.xyz * (diffuse * 0.8 + 0.2), 1.0);
 
