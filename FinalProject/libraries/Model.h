@@ -1,11 +1,13 @@
 #include <vector>
-
+#include <glm/gtx/vector_angle.hpp>
 
 enum StateType
 {
 	IDLE = 0,
 	ATTACK = 1,
 	DEAD = 2,
+	TRIGGERED = 3,
+	SHOT = 4,
 	STATECOUNT
 };
 
@@ -25,6 +27,8 @@ struct VertexBasic {
 struct EnemyVertex :VertexBasic {
 	glm::vec3 pos_idle;
 	glm::vec3 normal_idle;
+	glm::vec3 pos_dead;
+	glm::vec3 normal_dead;
 };
 struct AniviaVertex :VertexBasic
 {
@@ -38,13 +42,17 @@ struct AniviaVertex :VertexBasic
 
 
 
-struct Model
-{
+class Model
+{	
+public:
+	static int textureCount;
 	glm::vec3 position = { 0,0,0 };
 	glm::vec3 rotateAxis = { 0,1,0 };
+	glm::vec2 screenCoor = { 0,0 };
 	float rotateAngle = 0.0;
 	float scaleFactor = 1.0;
 	GLuint texture;
+	int textureNumber;
 	GLuint vao, vbo;
 	void loadTexture(char* fileName)
 	{
@@ -74,6 +82,7 @@ struct Model
 		// Set interpolation for texture sampling (GL_NEAREST for no interpolation)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		textureNumber = textureCount++;
 	}
 	void passUniform(GLuint program)
 	{
@@ -84,23 +93,36 @@ struct Model
 		glUniform1f(glGetUniformLocation(program, "mixFactor_idle"), 0.0);
 		glUniform1f(glGetUniformLocation(program, "mixFactor_attack"), 0.0);
 		glUniform1f(glGetUniformLocation(program, "mixFactor_dead"), 0.0);
+		glActiveTexture(GL_TEXTURE0 + textureNumber);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glUniform1i(glGetUniformLocation(program, "tex"), textureNumber);
+
+	}
+	glm::vec2 getScreenCoor(Camera camera)
+	{
+		glm::vec4 homoScreenCoor = camera.vpMatrix()*glm::vec4(position, 1.0);
+		screenCoor = { homoScreenCoor.x / homoScreenCoor.w, homoScreenCoor.y / homoScreenCoor.w };
+		screenCoor = screenCoor * 0.5f + glm::vec2(0.5, 0.5);
+		return screenCoor;
 	}
 };
 
-struct Character:Model
+class Character: public Model
 {
+public:
 	StateType state = IDLE;
 	MixFactor mixFactor;
 	float moveSpeed = 0.005;
-	glm::vec2 movement = { 0,0 };
-
+	glm::vec3 movement = { 0,0,0 };
+	float safeDistance = 1.0;
+	
 	void move(Camera camera)
 	{
 		glm::vec3 forward = glm::normalize(camera.forward);
 		glm::vec3 up = glm::normalize(camera.up);
 		glm::vec3 right = glm::normalize(glm::cross(forward, up));
 		glm::vec3 realUp = glm::normalize(glm::cross(right, forward));
-		position += right * movement.x + realUp * movement.y;
+		position += right * movement.x + realUp * movement.y + forward * movement.z;
 	}
 
 	void updateMixFactor()
@@ -139,8 +161,21 @@ struct Character:Model
 	}
 };
 
-struct Terrain:Model
+struct Anivia : public Character
 {
+public:
+	std::vector<AniviaVertex> vertices;
+};
+
+class Enemy : public Character
+{
+public:
+	std::vector<EnemyVertex> vertices;
+};
+
+class Terrain: public Model
+{
+public:
 	int NbVertX, NbVertY;
 	int startingRow = 0; //draw from this row
 	std::vector <std::vector<VertexBasic>> grid;
@@ -243,10 +278,60 @@ struct Terrain:Model
 	}
 };
 
-struct Shape :Model
+
+class Shape : public Model
 {
+public:
 	std::vector<VertexBasic> points;
 	std::vector<int> indices;
+	glm::vec3 offset = { 0,0,0 };
+	StateType state = IDLE;
+	float moveSpeed = 0;
+	glm::vec3 moveNormal = { 0,0,0 };
+	std::vector<VertexBasic> vertices;
+	void fire(Camera camera, glm::vec2 mouseScreenCoor)
+	{
+		state == SHOT;
+		glm::vec3 forward = glm::normalize(camera.forward);
+		glm::vec3 up = glm::normalize(camera.up);
+		glm::vec3 right = glm::normalize(glm::cross(forward, up));
+		glm::vec3 realUp = glm::normalize(glm::cross(right, forward));
+		
+		getScreenCoor(camera);
+
+		double angle;
+		angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouseScreenCoor - screenCoor));
+		angle = -angle;
+
+		moveNormal = right * float(sin(angle)) + realUp * float(cos(angle));
+		
+	}
+	void move()
+	{
+		position += moveNormal * moveSpeed;
+	}
+
+	void update(Camera camera, glm::vec3 followPosition, glm::vec2 mouseScreenCoor)
+	{
+		glm::vec2 screenCoor = getScreenCoor(camera);
+		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouseScreenCoor - screenCoor));
+
+		if (state == IDLE)
+		{
+			rotateAxis = { 0, 1, 0 };
+			rotateAngle = -angle;
+			position = followPosition;
+		}
+		else if (state == TRIGGERED)
+		{
+			fire(camera, mouseScreenCoor);
+		}
+		else if (state == SHOT)
+		{
+			move();
+		}
+	}
+
 	std::vector<VertexBasic> generateVertices()
 	{
 		std::vector<VertexBasic> vertices;
@@ -255,5 +340,16 @@ struct Shape :Model
 			vertices.push_back(points[indices[i]]);
 		}
 		return vertices;
+	}
+
+	void detectCollision(Character &character)
+	{
+		float distance = 0.0;
+		distance = glm::distance(position, character.position);
+		if (distance <= character.safeDistance)
+		{
+			character.state = DEAD;
+			character.movement = { 0, 0, 0.005 };
+		}
 	}
 };

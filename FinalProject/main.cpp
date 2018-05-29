@@ -33,11 +33,15 @@
 
 double lastFrameTime = 0.0;
 
-// global variables for anivia
+// global variables
 
+int Model::textureCount = 1;
 
-Character anivia;
-Character enemy;
+Anivia anivia;
+Enemy enemy;
+
+Shape icicle;
+Terrain terrain(15, 15);
 
 
 // Configuration
@@ -127,7 +131,7 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	cameraKeyboardHandler(key, action);
 
 	float moveSpeed = anivia.moveSpeed;
-	glm::vec2 movement = { 0,0 };
+	glm::vec3 movement = { 0,0,0 };
 
 	switch (key) 
 	{
@@ -153,6 +157,10 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		if (action == GLFW_PRESS)movement.x = moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
+	case GLFW_KEY_3:
+		if (action == GLFW_PRESS) icicle.state = TRIGGERED;
+		if (action == GLFW_RELEASE) icicle.state = SHOT;
+		break;
 	default:
 		break;
 	}
@@ -175,44 +183,440 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 
 //declaration
 
-int main() {
-	//definitions
-	Terrain terrain(15, 15);
-
-	Shape icicle;
-	std::vector<VertexBasic> icicleVertices;
-	// initialization of icicle
+void initIcicle(Shape &icicle)
+{
+	icicle.moveSpeed = 0.005;
+	icicle.scaleFactor = 1;
+	icicle.rotateAxis = { 0,1,0 };
+	icicle.offset = { 0,0,1 };
+	float vertices[5][3] =
 	{
-		icicle.scaleFactor = 1;
-		icicle.rotateAxis = { 0,1,0 };
-		float vertices[5][3] = 
-		{
-			0, 0, 1.0,//Vertex 0
-			-0.2, 0, 0, // vertex 1
-			-0.1, 0, -0.2,  // Vertex 2
-			0.1, 0, -0.2, // Vertex3
-			0.2, 0, 0 // Vertex 4
-		};
-		float texCoor[5][2] =
-		{
-			1.0, 0.0,
-			1.0, 1.0,
-			0.5, 1.0,
-			0.0, 0.5,
-			0.0, 0.0
-		};
-		for (int i = 0; i < 5; i++)
-		{
-			VertexBasic vertex;
-			vertex.pos = { vertices[i][0], vertices[i][1], vertices[i][2] };
-			vertex.normal = { 0, 0, 1 };
-			vertex.texCoor = { texCoor[i][0], texCoor[i][1] };
-			vertex.pos.z += 1;
-			icicle.points.push_back(vertex);
-		}
-		icicle.indices = { 0,1,4,1,2,3,1,3,4 };
-		icicleVertices = icicle.generateVertices();
+		0, 0, 1.0,//Vertex 0
+		-0.2, 0, 0, // vertex 1
+		-0.1, 0, -0.2,  // Vertex 2
+		0.1, 0, -0.2, // Vertex3
+		0.2, 0, 0 // Vertex 4
+	};
+	float texCoor[5][2] =
+	{
+		1.0, 0.0,
+		1.0, 1.0,
+		0.5, 1.0,
+		0.0, 0.5,
+		0.0, 0.0
+	};
+	for (int i = 0; i < 5; i++)
+	{
+		VertexBasic vertex;
+		vertex.pos = { vertices[i][0], vertices[i][1], vertices[i][2] };
+		vertex.normal = { 0, 0, 1 };
+		vertex.texCoor = { texCoor[i][0], texCoor[i][1] };
+		vertex.pos += icicle.offset;
+		icicle.points.push_back(vertex);
 	}
+	icicle.indices = { 0,1,4,1,2,3,1,3,4 };
+	icicle.vertices = icicle.generateVertices();
+}
+void initEnemy(Enemy &enemy)
+{
+	enemy.position = { 0,0,3 };
+	enemy.scaleFactor = 0.3;
+	enemy.rotateAxis = { 0,1,0 };
+	enemy.rotateAngle = 3.14159;
+	enemy.movement.y = -0.0005;
+}
+int loadAnivia(Anivia &anivia)
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
+
+	//load ANIVIA
+	{
+		int vertexCounter = 0;
+		// load initial pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_start.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				AniviaVertex vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				// Retrieve coordinates for texture
+				vertex.texCoor = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				anivia.vertices.push_back(vertex);
+			}
+		}
+
+		//load idle pose (animation between initial and idle pose)
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_open_wing.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				anivia.vertices[vertexCounter].pos_idle = vertex.pos;
+				anivia.vertices[vertexCounter].normal_idle = vertex.normal;
+				vertexCounter++;
+			}
+		}
+
+		//load attack pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_attack.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				anivia.vertices[vertexCounter].pos_attack = vertex.pos;
+				anivia.vertices[vertexCounter].normal_attack = vertex.normal;
+				vertexCounter++;
+			}
+		}
+
+		//load idle pose (animation between initial and idle pose)
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_dead.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				anivia.vertices[vertexCounter].pos_dead = vertex.pos;
+				anivia.vertices[vertexCounter].pos_dead = vertex.normal;
+				vertexCounter++;
+			}
+		}
+	}
+
+	// load texture for anivia
+	anivia.loadTexture("anivia.png");
+
+	/////// handle the vertices of anivia
+	{
+		glGenBuffers(1, &anivia.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glBufferData(GL_ARRAY_BUFFER, anivia.vertices.size() * sizeof(AniviaVertex), anivia.vertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &anivia.vao);
+		glBindVertexArray(anivia.vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_idle)));
+		glEnableVertexAttribArray(2);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_idle)));
+		glEnableVertexAttribArray(3);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_attack)));
+		glEnableVertexAttribArray(4);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_attack)));
+		glEnableVertexAttribArray(5);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_dead)));
+		glEnableVertexAttribArray(6);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_dead)));
+		glEnableVertexAttribArray(7);
+
+		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, texCoor)));
+		glEnableVertexAttribArray(8);
+	}
+	return 0;
+}
+int loadEnemy(Enemy &enemy)
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
+	//load
+	{
+		int vertexCounter = 0;
+		// load initial pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "aatrox_low.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				EnemyVertex vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				// Retrieve coordinates for texture
+				vertex.texCoor = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				enemy.vertices.push_back(vertex);
+			}
+		}
+
+		//load idle pose (animation between initial and idle pose)
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "aatrox_high.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				enemy.vertices[vertexCounter].pos_idle = vertex.pos;
+				enemy.vertices[vertexCounter].normal_idle = vertex.normal;
+				vertexCounter++;
+			}
+		}
+
+		//load dead pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "aatrox_dead.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				enemy.vertices[vertexCounter].pos_dead = vertex.pos;
+				enemy.vertices[vertexCounter].normal_dead = vertex.normal;
+				vertexCounter++;
+			}
+		}
+
+	}
+
+	// load texture for enemy
+	enemy.loadTexture("Aatrox_Base_Mat.png");
+
+	/////// handle the vertices of enemy
+	{
+		glGenBuffers(1, &enemy.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glBufferData(GL_ARRAY_BUFFER, enemy.vertices.size() * sizeof(EnemyVertex), enemy.vertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &enemy.vao);
+		glBindVertexArray(enemy.vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, normal)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, pos_idle)));
+		glEnableVertexAttribArray(2);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, normal_idle)));
+		glEnableVertexAttribArray(3);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, pos_dead)));
+		glEnableVertexAttribArray(6);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, normal_dead)));
+		glEnableVertexAttribArray(7);
+
+		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, texCoor)));
+		glEnableVertexAttribArray(8);
+	}
+	return 0;
+}
+int loadTerrain(Terrain &terrain)
+{
+	////////////////terrain
+	{
+		glGenBuffers(1, &terrain.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
+		glBufferData(GL_ARRAY_BUFFER, terrain.vertices.size() * sizeof(VertexBasic), terrain.vertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &terrain.vao);
+		glBindVertexArray(terrain.vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+		glEnableVertexAttribArray(8);
+	}
+	// add texture for terrain
+	terrain.loadTexture("terrain.png");
+
+	///////////////icicle
+	{
+		icicle.loadTexture("icicle.png");
+		glGenBuffers(1, &icicle.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+		glBufferData(GL_ARRAY_BUFFER, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &icicle.vao);
+		glBindVertexArray(icicle.vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+		glEnableVertexAttribArray(8);
+	}
+	return 0;
+}
+
+int main() {
+	//init
+	initIcicle(icicle);
+	initEnemy(enemy);
 
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW!" << std::endl;
@@ -362,352 +766,15 @@ int main() {
 
 	//defination of vertices
 	std::vector<VertexBasic> vertices;
-	std::vector<AniviaVertex> aniviaVertices;
-	std::vector<EnemyVertex> enemyVertices;
+	//std::vector<AniviaVertex> aniviaVertices;
+	//std::vector<EnemyVertex> enemyVertices;
 	std::vector<AniviaVertex> aniviaHeadVertices;
 
-	//load ANIVIA
-	{
-		int vertexCounter = 0;
-		// load initial pose
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_start.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				AniviaVertex vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				// Retrieve coordinates for texture
-				vertex.texCoor = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					attrib.texcoords[2 * index.texcoord_index + 1]
-				};
-				
-				aniviaVertices.push_back(vertex);
-			}
-		}
-
-		//load idle pose (animation between initial and idle pose)
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_open_wing.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		vertexCounter = 0;
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				VertexBasic vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				aniviaVertices[vertexCounter].pos_idle = vertex.pos;
-				aniviaVertices[vertexCounter].normal_idle = vertex.normal;
-				vertexCounter++;
-			}
-		}
-
-		//load attack pose
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_attack.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		vertexCounter = 0;
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				VertexBasic vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				aniviaVertices[vertexCounter].pos_attack = vertex.pos;
-				aniviaVertices[vertexCounter].normal_attack = vertex.normal;
-				vertexCounter++;
-			}
-		}
-
-		//load idle pose (animation between initial and idle pose)
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "anivia_dead.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		vertexCounter = 0;
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				VertexBasic vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				aniviaVertices[vertexCounter].pos_dead = vertex.pos;
-				aniviaVertices[vertexCounter].pos_dead = vertex.normal;
-				vertexCounter++;
-			}
-		}
-
-
-	}
-
-	// load texture for anivia
-	anivia.loadTexture("anivia.png");
-
-
-
-	/////// handle the vertices of anivia
-	{
-		glGenBuffers(1, &anivia.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glBufferData(GL_ARRAY_BUFFER, aniviaVertices.size() * sizeof(AniviaVertex), aniviaVertices.data(), GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &anivia.vao);
-		glBindVertexArray(anivia.vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos)));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_idle)));
-		glEnableVertexAttribArray(2);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_idle)));
-		glEnableVertexAttribArray(3);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_attack)));
-		glEnableVertexAttribArray(4);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_attack)));
-		glEnableVertexAttribArray(5);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, pos_dead)));
-		glEnableVertexAttribArray(6);
-
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, normal_dead)));
-		glEnableVertexAttribArray(7);
-		
-		glBindBuffer(GL_ARRAY_BUFFER, anivia.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(AniviaVertex), reinterpret_cast<void*>(offsetof(AniviaVertex, texCoor)));
-		glEnableVertexAttribArray(8);
-	}
 	
-
-
-	//////////////////init for enemy
-	enemy.position = { 0,0,3 };
-	enemy.scaleFactor = 0.3;
-	enemy.rotateAngle = 3.14159;
-	enemy.movement.y = -0.0005;
-	//load
-	{
-		int vertexCounter = 0;
-		// load initial pose
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "aatrox_low.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				EnemyVertex vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				// Retrieve coordinates for texture
-				vertex.texCoor = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					attrib.texcoords[2 * index.texcoord_index + 1]
-				};
-
-				enemyVertices.push_back(vertex);
-			}
-		}
-
-		//load idle pose (animation between initial and idle pose)
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "aatrox_high.obj")) {
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-		// Read triangle vertices from OBJ file
-		vertexCounter = 0;
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				VertexBasic vertex = {};
-
-				// Retrieve coordinates for vertex by index
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				// Retrieve components of normal by index
-				vertex.normal = {
-					attrib.normals[3 * index.normal_index + 0],
-					attrib.normals[3 * index.normal_index + 1],
-					attrib.normals[3 * index.normal_index + 2]
-				};
-
-				enemyVertices[vertexCounter].pos_idle = vertex.pos;
-				enemyVertices[vertexCounter].normal_idle = vertex.normal;
-				vertexCounter++;
-			}
-		}
-		
-	}
-
-	// load texture for enemy
-	enemy.loadTexture("Aatrox_Base_Mat.png");
-
-	/////// handle the vertices of enemy
-	{
-		glGenBuffers(1, &enemy.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glBufferData(GL_ARRAY_BUFFER, enemyVertices.size() * sizeof(EnemyVertex), enemyVertices.data(), GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &enemy.vao);
-		glBindVertexArray(enemy.vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, pos)));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, pos_idle)));
-		glEnableVertexAttribArray(2);
-
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, normal_idle)));
-		glEnableVertexAttribArray(3);
-
-		glBindBuffer(GL_ARRAY_BUFFER, enemy.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(EnemyVertex), reinterpret_cast<void*>(offsetof(EnemyVertex, texCoor)));
-		glEnableVertexAttribArray(8);
-	}
-
-
-	////////////////terrain
-	{
-		glGenBuffers(1, &terrain.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glBufferData(GL_ARRAY_BUFFER, terrain.vertices.size() * sizeof(VertexBasic), terrain.vertices.data(), GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &terrain.vao);
-		glBindVertexArray(terrain.vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
-		glEnableVertexAttribArray(8);
-	}
-	// add texture for terrain
-	terrain.loadTexture("terrain.png");
-
-	///////////////icicle
-	{
-		icicle.loadTexture("icicle.png");
-		glGenBuffers(1, &icicle.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glBufferData(GL_ARRAY_BUFFER, icicleVertices.size() * sizeof(VertexBasic), icicleVertices.data(), GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &icicle.vao);
-		glBindVertexArray(icicle.vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
-		glEnableVertexAttribArray(8);
-	}
-
+	loadAnivia(anivia);
+	loadEnemy(enemy);
+	loadTerrain(terrain);
+	
 	//////////////////// Create Vertex Buffer Object
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
@@ -777,21 +844,11 @@ int main() {
 		enemy.updateMixFactor();
 
 		terrain.update();
+		glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
+		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
 
-		icicle.position = anivia.position;
-
-		glm::vec4 tmp = mainCamera.vpMatrix()*glm::vec4(icicle.position, 1.0);
-		glm::vec2 screenCoor = { tmp.x / tmp.w, tmp.y / tmp.w };
-		screenCoor = screenCoor * 0.5f + glm::vec2(0.5, 0.5);
-
-		anivia.rotateAxis = { 0.0, 1.0, 0.0 };
-		double angle;
-		
-		angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
-		icicle.rotateAxis = { 0, 1, 0 };
-		icicle.rotateAngle = -angle;
-		//std::cerr << angle << std::endl;
-		//anivia.rotateAngle = -angle;
+		icicle.update(mainCamera, anivia.position, mouse.screenCoor);
+		icicle.detectCollision(enemy);
 
 		glfwPollEvents();
 
@@ -835,21 +892,12 @@ int main() {
 		glm::mat4 mvp = mainCamera.vpMatrix();
 
 		glUniformMatrix4fv(glGetUniformLocation(mainProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
-
-		// Set view position
 		glUniform3fv(glGetUniformLocation(mainProgram, "viewPos"), 1, glm::value_ptr(mainCamera.position));
-
-		// Expose current time in shader uniform
 		glUniform1f(glGetUniformLocation(mainProgram, "time"), static_cast<float>(glfwGetTime()));
 		
-		anivia.passUniform(mainProgram);
-
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, anivia.texture);
-		glUniform1i(glGetUniformLocation(mainProgram, "tex"), 1);
+		
 
 		// Bind vertex data
-		glBindVertexArray(anivia.vao);
 
 		// Bind the shadow map to texture slot 0
 		GLint texture_unit = 0;
@@ -866,18 +914,15 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
-
-		// Execute draw command
-		glDrawArrays(GL_TRIANGLES, 0, aniviaVertices.size());
+		
+		glBindVertexArray(anivia.vao);
+		anivia.passUniform(mainProgram);
+		glDrawArrays(GL_TRIANGLES, 0, anivia.vertices.size());
 
 		glBindVertexArray(enemy.vao); 
 		enemy.passUniform(mainProgram);
 
-
-		glActiveTexture(GL_TEXTURE0 + 1);
-		glBindTexture(GL_TEXTURE_2D, enemy.texture);
-		glUniform1i(glGetUniformLocation(mainProgram, "tex"), 1);
-		glDrawArrays(GL_TRIANGLES, 0, enemyVertices.size());
+		glDrawArrays(GL_TRIANGLES, 0, enemy.vertices.size());
 
 
 		// update terrain vertices
@@ -888,37 +933,30 @@ int main() {
 			//glBindVertexArray(terrain.vao);
 
 		}
-/*
+
 		glBindVertexArray(terrain.vao);
 		terrain.passUniform(mainProgram);
-		glActiveTexture(GL_TEXTURE0 + 3);
-		glBindTexture(GL_TEXTURE_2D, terrain.texture);
-		glUniform1i(glGetUniformLocation(mainProgram, "tex"), 3);
-		glDrawArrays(GL_TRIANGLES, 0, terrain.vertices.size());*/
+		glDrawArrays(GL_TRIANGLES, 0, terrain.vertices.size());
 
 
 		// update terrain vertices
-		for (int i = 0; i < icicleVertices.size(); i++)
+		for (int i = 0; i < icicle.vertices.size(); i++)
 		{
-			icicleVertices[i].texCoor.x -= 0.001;
-			icicleVertices[i].texCoor.y += 0.001;
+			icicle.vertices[i].texCoor.x -= 0.001;
+			icicle.vertices[i].texCoor.y += 0.001;
 		}
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, icicleVertices.size() * sizeof(VertexBasic), icicleVertices.data());
+			glBufferSubData(GL_ARRAY_BUFFER, 0, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data());
 			//glBindVertexArray(terrain.vao);
 		}
 		glBindVertexArray(icicle.vao);
 		icicle.passUniform(mainProgram);
-		glActiveTexture(GL_TEXTURE0 + 4);
-		glBindTexture(GL_TEXTURE_2D, icicle.texture);
-		glUniform1i(glGetUniformLocation(mainProgram, "tex"), 4);
-		glDrawArrays(GL_TRIANGLES, 0, icicleVertices.size());
+		glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
 
 		// Present result to the screen
 		glfwSwapBuffers(window);
 
-		std::cerr << 1.0 / (glfwGetTime() - lastFrameTime) << std::endl;
 		lastFrameTime = glfwGetTime();
 	}
 
