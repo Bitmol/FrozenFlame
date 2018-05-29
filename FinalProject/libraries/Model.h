@@ -22,7 +22,7 @@ struct MixFactor
 	float idle = 0.0;
 	float attack = 0.0;
 	float dead = 0.0;
-	float increment = 0.001;
+	float increment = 0.01;
 };
 
 struct VertexBasic {
@@ -128,7 +128,7 @@ class Character: public Model
 public:
 	StateType state = IDLE;
 	MixFactor mixFactor;
-	float moveSpeed = 0.005;
+	float moveSpeed = 0.1;
 	glm::vec3 movement = { 0,0,0 };
 	float safeDistance = 1.0;
 	
@@ -444,7 +444,7 @@ public:
 	float radius = 1;
 	glm::vec3 offset = { 0,0,0 };
 	StateType state = IDLE;
-	float moveSpeed = 0.005;
+	float moveSpeed = 500;
 	glm::vec3 moveNormal = { 0,0,0 };
 	std::vector<VertexBasic> vertices;
 
@@ -465,12 +465,12 @@ public:
 		moveNormal = right * float(sin(angle)) + realUp * float(cos(angle));
 		
 	}
-	void move()
+	void move(double timeInterval)
 	{
-		position += moveNormal * moveSpeed;
+		position += moveNormal * moveSpeed * float(timeInterval);
 	}
 
-	void update(Camera camera, glm::vec3 followPosition, glm::vec2 mouseScreenCoor)
+	void update(Camera camera, glm::vec3 followPosition, glm::vec2 mouseScreenCoor, double timeInterval)
 	{
 		glm::vec2 screenCoor = getScreenCoor(camera);
 		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouseScreenCoor - screenCoor));
@@ -484,10 +484,13 @@ public:
 		else if (state == TRIGGERED)
 		{
 			fire(camera, mouseScreenCoor);
+			rotateAxis = { 0, 1, 0 };
+			rotateAngle = -angle;
+			position = followPosition;
 		}
 		else if (state == SHOT)
 		{
-  			move();
+  			move(timeInterval);
 			glm::vec2 screenCoor = getScreenCoor(camera);
 			if (screenCoor.x <= 0 || screenCoor.x >= 1 || screenCoor.y <= 0 || screenCoor.y >= 1)
 				state = WAITING;
@@ -503,8 +506,8 @@ public:
 			rotateAxis = { 0, 1, 0 };
 			rotateAngle = -angle;
 			position = followPosition ;
-			scaleFactor = scaleFactor >= 1.0? 1.0:scaleFactor+0.01;
-			if (scaleFactor >= 1)
+			scaleFactor = scaleFactor >= 0.75? 0.75:scaleFactor+0.1;
+			if (scaleFactor >= 0.75)
 				state = IDLE;
 		}
 	}
@@ -526,7 +529,7 @@ public:
 		if (distance <= enemy.safeDistance)
 		{
 			enemy.state = DEAD;
-			enemy.movement = { 0, 0, 0.005 };
+			enemy.movement = { 0, 0, 0.05 };
 		}
 	}
 

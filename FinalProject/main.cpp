@@ -40,6 +40,7 @@ Grid grid;
 
 
 double lastFrameTime = 0.0;
+double const maxFrameRate = 60;
 
 // global variables
 
@@ -173,19 +174,19 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		boss.state = DAMAGE2;
 		break;
 	case GLFW_KEY_UP:
-		if (action == GLFW_PRESS) movement.y = moveSpeed;
+		if (action == GLFW_PRESS || action==GLFW_REPEAT) movement.y = moveSpeed;
 		if (action == GLFW_RELEASE) movement.y = 0.0;
 		break;
 	case GLFW_KEY_DOWN:
-		if (action == GLFW_PRESS)movement.y = -moveSpeed;
+		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.y = -moveSpeed;
 		if (action == GLFW_RELEASE)movement.y = 0.0;
 		break;
 	case GLFW_KEY_LEFT:
-		if (action == GLFW_PRESS)movement.x = -moveSpeed;
+		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.x = -moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
 	case GLFW_KEY_RIGHT:
-		if (action == GLFW_PRESS)movement.x = moveSpeed;
+		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.x = moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
 	case GLFW_KEY_SPACE:
@@ -197,18 +198,15 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		//std::cerr << currentIcicle << std::endl;
 		if (action == GLFW_PRESS)
 		{
-			if (currentIcicle != -1)
-			{
-				icicles[currentIcicle].state = TRIGGERED;
-			}
+			icicles[currentIcicle].state = TRIGGERED;
 		}
 		if (action == GLFW_RELEASE)
 		{
-			
 			icicles[currentIcicle].state = SHOT;
 			currentIcicle++;
 			currentIcicle %= icicles.size();
 			icicles[currentIcicle].state = LOADING;
+			
 		}
 		break;
 	default:
@@ -260,11 +258,11 @@ void initIcicles()
 {
 	Shape shape;
 	const int vertexNumber = 5;
-	shape.moveSpeed = 0.005;
+	shape.moveSpeed = 5;
 	shape.scaleFactor = 0;
 	shape.rotateAxis = { 0,1,0 };
 	shape.state = WAITING;
-	shape.offset = { 0,0,1 };
+	shape.offset = { 0,0,1.5 };
 	float vertices[vertexNumber][3] =
 	{
 		0, 0, 1.0,//Vertex 0
@@ -381,8 +379,8 @@ void initEnemy(Enemy &enemy)
 	enemy.scaleFactor = 0.3;
 	enemy.rotateAxis = { 0,1,0 };
 	enemy.rotateAngle = 3.14159;
-	enemy.movement.y = -0.0005;
-	enemy.mixFactor.increment = 0.005;
+	enemy.movement.y = -0.01;
+	enemy.mixFactor.increment = 0.1;
 }
 int loadAnivia(Anivia &anivia)
 {
@@ -1032,7 +1030,11 @@ int main() {
 
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
+		double timeInterval = glfwGetTime() - lastFrameTime;
 		
+		if (timeInterval < 1.0 / maxFrameRate)
+			continue;
+		lastFrameTime = glfwGetTime();
 		//if (lastState != icicles[0].state)
 		//{
 		//	std::cerr << icicles[0].state << std::endl;
@@ -1060,9 +1062,13 @@ int main() {
 
 			glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
 			double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
-			icicle.update(mainCamera, anivia.position, mouse.screenCoor);
-			icicle.detectCollision(enemy);
-			icicle.detectCollision(boss);
+			icicle.update(mainCamera, anivia.position, mouse.screenCoor, timeInterval);
+			if (icicle.state == SHOT)
+			{
+				icicle.detectCollision(enemy);
+				icicle.detectCollision(boss);
+			}
+			
 		}
 		
 		glfwPollEvents();
@@ -1192,7 +1198,6 @@ int main() {
 		// Present result to the screen
 		glfwSwapBuffers(window);
 
-		lastFrameTime = glfwGetTime();
 	}
 
 	glDeleteFramebuffers(1, &framebuffer);
