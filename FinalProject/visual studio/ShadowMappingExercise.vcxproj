@@ -11,7 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\grid.cpp" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\mesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shader.frag" />
@@ -23,7 +25,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\camera.h" />
+    <ClInclude Include="..\libraries\grid.h" />
+    <ClInclude Include="..\libraries\mesh.h" />
     <ClInclude Include="..\libraries\Model.h" />
+    <ClInclude Include="..\libraries\stb_image.h" />
+    <ClInclude Include="..\libraries\Vec3D.h" />
+    <ClInclude Include="..\libraries\Vertex.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F108EF87-748D-44F4-8D03-92EF4625363D}</ProjectGuid>

@@ -27,9 +27,17 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <vector>
 
 #include "Model.h"
+#include "Vec3D.h"
+#include "mesh.h"
+#include "grid.h"
+
+
+Mesh mesh;
+Mesh simplified;
+Grid grid;
+
 
 double lastFrameTime = 0.0;
 
@@ -40,6 +48,7 @@ int Model::textureCount = 1;
 
 Anivia anivia;
 Enemy enemy;
+Boss boss;
 
 Shape icicle, flame, icicleDiamond;
 Terrain terrain(20, 20, lightDir);
@@ -49,6 +58,24 @@ Terrain terrain(20, 20, lightDir);
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
+std::vector<BossVertex> formatMeshVertices(std::vector<Vertex> vertices, std::vector<Triangle> triangles)
+{
+	std::vector<BossVertex> bossVertices;
+	for (int i=0;i<triangles.size();++i)
+	{
+	    for(int v = 0; v < 3 ; v++){
+			BossVertex vertex;
+			glm::vec3 pos, normal;
+			normal = { vertices[triangles[i].v[v]].n[0], vertices[triangles[i].v[v]].n[1], vertices[triangles[i].v[v]].n[2] };
+			pos = { vertices[triangles[i].v[v]].p[0], vertices[triangles[i].v[v]].p[1] , vertices[triangles[i].v[v]].p[2] };
+			vertex.pos = pos;
+			vertex.normal = normal;
+			bossVertices.push_back(vertex);
+	    }
+	
+	}
+	return bossVertices;
+}
 
 struct Mouse
 {
@@ -137,10 +164,13 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	switch (key) 
 	{
 	case GLFW_KEY_1:
-		anivia.state = IDLE;
+		boss.state = IDLE;
 		break;
 	case GLFW_KEY_2:
 		anivia.state = ATTACK;
+		break;
+	case GLFW_KEY_3:
+		boss.state = DAMAGE2;
 		break;
 	case GLFW_KEY_UP:
 		if (action == GLFW_PRESS) movement.y = moveSpeed;
@@ -183,6 +213,29 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 }
 
 //declaration
+
+void initBoss(Boss &boss)
+{
+	boss.state = IDLE;
+	boss.position = { 0,1,4 };
+	boss.scaleFactor = 3;
+	boss.rotateAxis = { 0,1,0 };
+	boss.rotateAngle = 3.14159;
+	boss.safeDistance = 2.0;
+	mesh.loadMesh("boss.obj");
+	boss.vertices = formatMeshVertices(mesh.vertices, mesh.triangles);
+	boss.simplifiedVertices.push_back(boss.vertices);
+		
+	for (int i = 0; i < 5; i++)
+	{
+		Mesh simplified;
+		simplified = grid.simplifyMesh(mesh, 70 - i * 10);
+
+		boss.simplifiedVertices.push_back(formatMeshVertices(simplified.vertices, simplified.triangles));
+	}
+
+	
+}
 
 void initIcicle(Shape &shape)
 {
@@ -641,6 +694,29 @@ int loadEnemy(Enemy &enemy)
 	}
 	return 0;
 }
+int loadBoss(Boss &boss)
+{
+
+	/////// handle the vertices of enemy
+	{
+		glGenBuffers(1, &boss.vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+		glBufferData(GL_ARRAY_BUFFER, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &boss.vao);
+		glBindVertexArray(boss.vao);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, normal)));
+		glEnableVertexAttribArray(1);
+	}
+	return 0;
+}
+
 int loadTerrain(Terrain &terrain)
 {
 	////////////////terrain
@@ -702,6 +778,7 @@ int main() {
 	//init
 	initIcicle(icicle);
 	initEnemy(enemy);
+	initBoss(boss);
 
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW!" << std::endl;
@@ -859,6 +936,7 @@ int main() {
 	loadEnemy(enemy);
 	loadTerrain(terrain);
 	loadIcicle();
+	loadBoss(boss);
 
 	//////////////////// Create Vertex Buffer Object
 	GLuint vbo;
@@ -928,12 +1006,15 @@ int main() {
 		enemy.move(mainCamera);
 		enemy.updateMixFactor();
 
+		boss.update();
+
 		terrain.update();
 		glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
 		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
 
 		icicle.update(mainCamera, anivia.position, mouse.screenCoor);
 		icicle.detectCollision(enemy);
+		icicle.detectCollision(boss);
 
 		glfwPollEvents();
 
@@ -1010,6 +1091,20 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, enemy.vertices.size());
 
 
+		// update boss vertices
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
+			//glBindVertexArray(terrain.vao);
+
+		}
+		glBindVertexArray(boss.vao);
+		boss.passUniform(mainProgram);
+		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
+
+
+
+
 		// update terrain vertices
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
@@ -1023,7 +1118,7 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, terrain.vertices.size());
 
 
-		// update terrain vertices
+		// update icicle vertices
 		for (int i = 0; i < icicle.vertices.size(); i++)
 		{
 			icicle.vertices[i].texCoor.x -= 0.001;

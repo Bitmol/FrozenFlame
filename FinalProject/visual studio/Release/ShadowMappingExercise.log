@@ -1,29 +1,31 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(391,5): warning MSB8028: 中间目录(Release\)包含从另一个项目(ShadowMappingExercise.vcxproj)共享的文件。   这会导致错误的清除和重新生成行为。
   main.cpp
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(21): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(122): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(368): warning C4244: “-=”: 从“double”转换到“float”，可能丢失数据
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(397): warning C4553: “==”: 未使用表达式结果；是否打算使用“=”?
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(425): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(441): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(58): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(59): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(190): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(201): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(201): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(226): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(236): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(236): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(260): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(274): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(274): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(301): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(303): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(304): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(305): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1027): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1029): warning C4305: “-=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1030): warning C4305: “+=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(23): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(129): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(420): warning C4244: “-=”: 从“double”转换到“float”，可能丢失数据
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(449): warning C4553: “==”: 未使用表达式结果；是否打算使用“=”?
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(477): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\users\gizzl\documents\github\3dcga\finalproject\libraries\model.h(493): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(64): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(85): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(86): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(223): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(243): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(254): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(254): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(279): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(289): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(289): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(313): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(327): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(327): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(354): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(356): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(357): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(358): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1122): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1124): warning C4305: “-=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1125): warning C4305: “+=”: 从“double”到“float”截断
 LINK : warning LNK4098: 默认库“LIBCMT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
   正在生成代码
   已完成代码的生成

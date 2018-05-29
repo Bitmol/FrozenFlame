@@ -1,7 +1,6 @@
 #include <vector>
 #include <glm/gtx/intersect.hpp>
 #include <glm/gtx/vector_angle.hpp>
-//
 
 enum StateType
 {
@@ -10,6 +9,9 @@ enum StateType
 	DEAD = 2,
 	TRIGGERED = 3,
 	SHOT = 4,
+	DAMAGE1 = 5,
+	DAMAGE2 = 6,
+	DAMAGE3 = 7,
 	STATECOUNT
 };
 
@@ -46,7 +48,12 @@ struct AniviaVertex :VertexBasic
 	glm::vec3 normal_dead;
 };
 
-
+struct BossVertex :VertexBasic {
+	glm::vec3 pos_idle;
+	glm::vec3 normal_idle;
+	glm::vec3 pos_dead;
+	glm::vec3 normal_dead;
+};
 
 class Model
 {	
@@ -103,7 +110,7 @@ public:
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glUniform1i(glGetUniformLocation(program, "tex"), textureNumber);
 		glUniform1f(glGetUniformLocation(program, "useShadow"), false);
-
+		glUniform1f(glGetUniformLocation(program, "uniColor"), false);
 	}
 	glm::vec2 getScreenCoor(Camera camera)
 	{
@@ -168,7 +175,7 @@ public:
 	}
 };
 
-struct Anivia : public Character
+class Anivia : public Character
 {
 public:
 	std::vector<AniviaVertex> vertices;
@@ -178,6 +185,51 @@ class Enemy : public Character
 {
 public:
 	std::vector<EnemyVertex> vertices;
+};
+
+class Boss : public Character
+{
+public:
+	std::vector<BossVertex> vertices;
+	std::vector<BossVertex> emptyVertices;
+	std::vector<std::vector<BossVertex>> simplifiedVertices;
+	void passUniform(GLuint program)
+	{
+		Model::passUniform(program);
+
+		glUniform1f(glGetUniformLocation(program, "uniColor"), true);
+	}
+	void update()
+	{
+		switch (state)
+		{
+		case IDLE:
+			vertices = simplifiedVertices[0];
+			break;
+		case DAMAGE1:
+			vertices = simplifiedVertices[1];
+			break;
+		case DAMAGE2:
+			vertices = simplifiedVertices[4];
+			break;
+		case DAMAGE3:
+			vertices = simplifiedVertices[5];
+			break;
+		}
+	}/*
+	void clearVertices()
+	{
+		for (int i = 0; i < vertices.size(); i++)
+		{
+			BossVertex vertex;
+			vertex.pos = { 0,0,0 };
+			vertex.normal = { 0,0,0 };
+			vertices[i] = vertex;
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(BossVertex), vertices.data());
+		glBindVertexArray(vao);
+	}*/
 };
 
 class Terrain: public Model
@@ -445,14 +497,38 @@ public:
 		return vertices;
 	}
 
-	void detectCollision(Character &character)
+	void detectCollision(Enemy &enemy)
 	{
 		float distance = 0.0;
-		distance = glm::distance(position, character.position);
-		if (distance <= character.safeDistance)
+		distance = glm::distance(position, enemy.position);
+		if (distance <= enemy.safeDistance)
 		{
-			character.state = DEAD;
-			character.movement = { 0, 0, 0.005 };
+			enemy.state = DEAD;
+			enemy.movement = { 0, 0, 0.005 };
+		}
+	}
+
+	void detectCollision(Boss &enemy)
+	{
+		float distance = 0.0;
+		distance = glm::distance(position, enemy.position);
+		if (distance <= enemy.safeDistance)
+		{
+			switch (enemy.state)
+			{
+			case IDLE:
+				enemy.state = DAMAGE1;
+				break;
+			case DAMAGE1:
+				enemy.state = DAMAGE2;
+				break;
+			case DAMAGE2:
+				enemy.state = DAMAGE3;
+				break;
+			case DAMAGE3:
+				enemy.state = DEAD;
+				break;
+			}
 		}
 	}
 };

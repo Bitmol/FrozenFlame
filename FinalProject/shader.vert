@@ -10,6 +10,7 @@ layout(location = 11) uniform vec3 rotateAxis = vec3(0, 1, 0);
 layout(location = 12) uniform float rotateAngle = 0.0;
 layout(location = 13) uniform float scaleFactor = 1.0;
 layout(location = 14) uniform bool useShadow = false;
+layout(location = 15) uniform bool uniColor = false;
 
 
 // Per-vertex attributes
