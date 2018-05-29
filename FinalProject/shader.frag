@@ -25,6 +25,10 @@ void main() {
 	const vec3 lightDir = normalize(lightPos - fragPos);
 
 	float diffuse = max(dot(fragNormal, lightDir), 0.0);
+	vec3 reflectVec = reflect(fragNormal, -lightDir);
+	reflectVec = normalize(reflectVec);
+	float specular = max(dot(reflectVec, normalize(viewPos - fragPos)), 0.0);
+
 	vec4 color = texture(tex, vec2(fragTexCoor.x, 1.0-fragTexCoor.y));
 	
 	if (uniColor == true)
@@ -41,6 +45,8 @@ void main() {
 
 	
 //	outColor = vec4(color.xyz, 1.0);
-    outColor = vec4(color.xyz * (diffuse * 0.5 + 0.5), 1.0);
+	vec3 phongColor = color.xyz * (diffuse*0.3 + 0.5) + 0.5*pow(specular, 30)*vec3(1,1,1);
+	outColor = vec4(phongColor, 1.0);
+//    outColor = vec4(color.xyz * (diffuse * 0.5 + 0.5), 1.0);
 
 }

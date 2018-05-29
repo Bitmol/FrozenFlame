@@ -50,7 +50,10 @@ Anivia anivia;
 Enemy enemy;
 Boss boss;
 
-Shape icicle, flame, icicleDiamond;
+Shape flame, icicleDiamond;
+std::vector<Shape> icicles;
+int currentIcicle = 0;
+
 Terrain terrain(20, 20, lightDir);
 
 
@@ -89,9 +92,6 @@ struct Mouse
 };
 
 Mouse mouse;
-
-
-// Per-vertex data
 
 // Helper function to read a file like a shader
 std::string readFile(const std::string& path) {
@@ -189,8 +189,38 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
 	case GLFW_KEY_SPACE:
-		if (action == GLFW_PRESS) icicle.state = TRIGGERED;
-		if (action == GLFW_RELEASE) icicle.state = SHOT;
+		/*for (int i = 0; i < icicles.size(); i++)
+		{
+			std::cerr << icicles[i].state;
+		}
+		std::cerr << std::endl;*/
+		std::cerr << currentIcicle << std::endl;
+		if (action == GLFW_PRESS)
+		{
+			if (currentIcicle != -1)
+			{
+				icicles[currentIcicle].state = TRIGGERED;
+
+			}
+		}
+		if (action == GLFW_RELEASE)
+		{
+			if (icicles[currentIcicle].state == TRIGGERED)
+			{
+				icicles[currentIcicle].state = SHOT;
+			}
+			for (int i = 0; i < icicles.size(); i++)
+			{
+				if (icicles[i].state == WAITING)
+				{
+					icicles[currentIcicle].state = LOADING;
+					currentIcicle = i;
+					break;
+				}
+					
+
+			}
+		}
 		break;
 	default:
 		break;
@@ -237,12 +267,14 @@ void initBoss(Boss &boss)
 	
 }
 
-void initIcicle(Shape &shape)
+void initIcicles()
 {
+	Shape shape;
 	const int vertexNumber = 5;
 	shape.moveSpeed = 0.005;
-	shape.scaleFactor = 1;
+	shape.scaleFactor = 0;
 	shape.rotateAxis = { 0,1,0 };
+	shape.state = WAITING;
 	shape.offset = { 0,0,1 };
 	float vertices[vertexNumber][3] =
 	{
@@ -271,6 +303,12 @@ void initIcicle(Shape &shape)
 	}
 	shape.indices = { 0,1,4,1,2,3,1,3,4 };
 	shape.vertices = shape.generateVertices();
+
+	for(int i = 0; i < 5; i++)
+	{
+		icicles.push_back(shape);
+	}
+	icicles[0].state = LOADING;
 }
 
 void initIcicleDiamond(Shape &shape)
@@ -745,13 +783,13 @@ int loadTerrain(Terrain &terrain)
 		glEnableVertexAttribArray(9);
 	}
 	// add texture for terrain
-	terrain.loadTexture("grassdirt.jpg");
+	terrain.loadTexture("terrain.jpg");
 
 	
 	return 0;
 }
 
-void loadIcicle()
+void loadIcicle(Shape &icicle)
 {
 	icicle.loadTexture("icicle.png");
 	glGenBuffers(1, &icicle.vbo);
@@ -776,7 +814,7 @@ void loadIcicle()
 
 int main() {
 	//init
-	initIcicle(icicle);
+	initIcicles();
 	initEnemy(enemy);
 	initBoss(boss);
 
@@ -800,6 +838,7 @@ int main() {
 	}
 
 	glfwSetKeyCallback(window, keyboardHandler);
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 	glfwSetMouseButtonCallback(window, mouseButtonHandler);
 	glfwSetCursorPosCallback(window, cursorPosHandler);
 
@@ -935,7 +974,11 @@ int main() {
 	loadAnivia(anivia);
 	loadEnemy(enemy);
 	loadTerrain(terrain);
-	loadIcicle();
+	for (int i = 0; i < icicles.size(); i++)
+	{
+		loadIcicle(icicles[i]);
+	}
+	
 	loadBoss(boss);
 
 	//////////////////// Create Vertex Buffer Object
@@ -1009,13 +1052,19 @@ int main() {
 		boss.update();
 
 		terrain.update();
-		glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
-		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
 
-		icicle.update(mainCamera, anivia.position, mouse.screenCoor);
-		icicle.detectCollision(enemy);
-		icicle.detectCollision(boss);
 
+		for(int i = 0; i < icicles.size(); i++)
+		{
+			Shape &icicle = icicles[i];
+
+			glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
+			double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
+			icicle.update(mainCamera, anivia.position, mouse.screenCoor);
+			icicle.detectCollision(enemy);
+			icicle.detectCollision(boss);
+		}
+		
 		glfwPollEvents();
 
 		////////// Stub code for you to fill in order to render the shadow map
@@ -1119,19 +1168,26 @@ int main() {
 
 
 		// update icicle vertices
-		for (int i = 0; i < icicle.vertices.size(); i++)
+
+		for (int j = 0; j < icicles.size(); j++)
 		{
-			icicle.vertices[i].texCoor.x -= 0.001;
-			icicle.vertices[i].texCoor.y += 0.001;
+			Shape & icicle = icicles[j];
+			for (int i = 0; i < icicle.vertices.size(); i++)
+			{
+				icicle.vertices[i].texCoor.x -= 0.001;
+				icicle.vertices[i].texCoor.y += 0.001;
+			}
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data());
+				//glBindVertexArray(terrain.vao);
+			}
+			glBindVertexArray(icicle.vao);
+			icicle.passUniform(mainProgram);
+			glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
 		}
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data());
-			//glBindVertexArray(terrain.vao);
-		}
-		glBindVertexArray(icicle.vao);
-		icicle.passUniform(mainProgram);
-		glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
+
+		
 
 		// Present result to the screen
 		glfwSwapBuffers(window);

@@ -12,6 +12,8 @@ enum StateType
 	DAMAGE1 = 5,
 	DAMAGE2 = 6,
 	DAMAGE3 = 7,
+	WAITING = 8,
+	LOADING = 9,
 	STATECOUNT
 };
 
@@ -405,7 +407,7 @@ public:
 				}
 				if (inShadow == true)
 				{
-					grid[i][j].shadow = { 0,0,0 };
+					grid[i][j].shadow = { 0.5,0.5,0.5 };
 					std::cerr << i << '\t' << j << std::endl;
 				}
 					
@@ -439,11 +441,14 @@ class Shape : public Model
 public:
 	std::vector<VertexBasic> points;
 	std::vector<int> indices;
+	float radius = 1;
 	glm::vec3 offset = { 0,0,0 };
 	StateType state = IDLE;
-	float moveSpeed = 0;
+	float moveSpeed = 0.005;
 	glm::vec3 moveNormal = { 0,0,0 };
 	std::vector<VertexBasic> vertices;
+
+
 	void fire(Camera camera, glm::vec2 mouseScreenCoor)
 	{
 		state == SHOT;
@@ -484,6 +489,23 @@ public:
 		else if (state == SHOT)
 		{
 			move();
+			glm::vec2 screenCoor = getScreenCoor(camera);
+			if (screenCoor.x <= 0 || screenCoor.x >= 1 || screenCoor.y <= 0 || screenCoor.y >= 1)
+				state = WAITING;
+		}
+		else if (state == WAITING)
+		{
+			scaleFactor = 0.0;
+		}
+		else if (state == LOADING)
+		{
+			rotateAxis = { 0, 1, 0 };
+			rotateAngle = -angle;
+			offset.z += 0.01;
+			position = followPosition ;
+			scaleFactor = scaleFactor >= 1.0? 1.0:scaleFactor+0.01;
+			if (scaleFactor >= 1)
+				state = IDLE;
 		}
 	}
 
