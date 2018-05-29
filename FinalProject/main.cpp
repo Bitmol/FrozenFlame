@@ -40,7 +40,7 @@ int Model::textureCount = 1;
 Anivia anivia;
 Enemy enemy;
 
-Shape icicle;
+Shape icicle, flame, icicleDiamond;
 Terrain terrain(15, 15);
 
 
@@ -183,13 +183,14 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 
 //declaration
 
-void initIcicle(Shape &icicle)
+void initIcicle(Shape &shape)
 {
-	icicle.moveSpeed = 0.005;
-	icicle.scaleFactor = 1;
-	icicle.rotateAxis = { 0,1,0 };
-	icicle.offset = { 0,0,1 };
-	float vertices[5][3] =
+	const int vertexNumber = 5;
+	shape.moveSpeed = 0.005;
+	shape.scaleFactor = 1;
+	shape.rotateAxis = { 0,1,0 };
+	shape.offset = { 0,0,1 };
+	float vertices[vertexNumber][3] =
 	{
 		0, 0, 1.0,//Vertex 0
 		-0.2, 0, 0, // vertex 1
@@ -197,7 +198,7 @@ void initIcicle(Shape &icicle)
 		0.1, 0, -0.2, // Vertex3
 		0.2, 0, 0 // Vertex 4
 	};
-	float texCoor[5][2] =
+	float texCoor[vertexNumber][2] =
 	{
 		1.0, 0.0,
 		1.0, 1.0,
@@ -205,17 +206,93 @@ void initIcicle(Shape &icicle)
 		0.0, 0.5,
 		0.0, 0.0
 	};
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < vertexNumber; i++)
 	{
 		VertexBasic vertex;
 		vertex.pos = { vertices[i][0], vertices[i][1], vertices[i][2] };
 		vertex.normal = { 0, 0, 1 };
 		vertex.texCoor = { texCoor[i][0], texCoor[i][1] };
-		vertex.pos += icicle.offset;
-		icicle.points.push_back(vertex);
+		vertex.pos += shape.offset;
+		shape.points.push_back(vertex);
 	}
-	icicle.indices = { 0,1,4,1,2,3,1,3,4 };
-	icicle.vertices = icicle.generateVertices();
+	shape.indices = { 0,1,4,1,2,3,1,3,4 };
+	shape.vertices = shape.generateVertices();
+}
+
+void initIcicleDiamond(Shape &shape)
+{
+	const int vertexNumber = 4;
+	shape.moveSpeed = 0.005;
+	shape.scaleFactor = 1;
+	shape.rotateAxis = { 0,1,0 };
+	shape.offset = { 0,0,1 };
+	float vertices[vertexNumber][3] =
+	{
+		0, 0, -0.8,//Vertex 0
+		0.2, 0, 0, // vertex 1
+		0, 0, 0.8,  // Vertex 2
+		-0.2, 0, 0  // Vertex 3
+	};
+	float texCoor[vertexNumber][2] =
+	{
+		0.0, 5.0,
+		5.0, 0.0,
+		0.0, 0.0,
+		5.0, 0.0
+	};
+	for (int i = 0; i < vertexNumber; i++)
+	{
+		VertexBasic vertex;
+		vertex.pos = { vertices[i][0], vertices[i][1], vertices[i][2] };
+		vertex.normal = { 0, 0, 1 };
+		vertex.texCoor = { texCoor[i][0], texCoor[i][1] };
+		vertex.pos += shape.offset;
+		shape.points.push_back(vertex);
+	}
+	shape.indices = { 0,1,3,1,2,3 };
+	shape.vertices = shape.generateVertices();
+}
+
+void initFlame(Shape &shape)
+{
+	const int vertexNumber = 8;
+	shape.moveSpeed = 0.005;
+	shape.scaleFactor = 1;
+	shape.rotateAxis = { 0,1,0 };
+	shape.offset = { 0,0,1 };
+	float vertices[vertexNumber][3] =
+	{
+		0, 0, 0,//Vertex 0
+		0.4, 0, 1, // vertex 1
+		0.25, 0, 0.9,  // Vertex 2
+		0.1, 0, 0.98, // Vertex3
+		0, 0, 0.92, // Vertex 4
+		-0.1, 0, 0.98,
+		-0.25, 0, 0.9,
+		-0.4, 0, 1
+	};
+	float texCoor[vertexNumber][2] =
+	{
+		1.0, 1.0,
+		0.0, 1.0,
+		0.0, 0.0,
+		0.0, 1.0,
+		0.0, 0.0,
+		0.0, 1.0,
+		0.0, 0.0,
+		0.0, 1.0
+	};
+	for (int i = 0; i < vertexNumber; i++)
+	{
+		VertexBasic vertex;
+		vertex.pos = { vertices[i][0], vertices[i][1], vertices[i][2] };
+		vertex.normal = { 0, 0, 1 };
+		vertex.texCoor = { texCoor[i][0], texCoor[i][1] };
+		vertex.pos += shape.offset;
+		shape.points.push_back(vertex);
+	}
+	shape.indices = { 0,1,2,0,2,3,0,3,4,0,4,5,0,5,6,0,6,7 };
+	shape.vertices = shape.generateVertices();
 }
 void initEnemy(Enemy &enemy)
 {
