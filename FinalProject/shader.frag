@@ -15,6 +15,7 @@ layout(location = 0) out vec4 outColor;
 in vec3 fragPos;    // World-space position
 in vec3 fragNormal; // World-space normal
 in vec2 fragTexCoor;
+in vec3 fragShadow;
 
 void main() {
 
@@ -23,6 +24,10 @@ void main() {
 
 	float diffuse = max(dot(fragNormal, lightDir), 0.0);
 	vec4 color = texture(tex, vec2(fragTexCoor.x, 1.0-fragTexCoor.y));
-    outColor = vec4(color.xyz * (diffuse * 0.8 + 0.2), 1.0);
+	color.x *= fragShadow.x;
+	color.y *= fragShadow.y;
+	color.z *= fragShadow.z;
+	outColor = vec4(color.xyz, 1.0);
+//    outColor = vec4(color.xyz * (diffuse * 0.8 + 0.2), 1.0);
 
 }

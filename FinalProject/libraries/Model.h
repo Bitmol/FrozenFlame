@@ -1,5 +1,7 @@
 #include <vector>
+#include <glm/gtx/intersect.hpp>
 #include <glm/gtx/vector_angle.hpp>
+//
 
 enum StateType
 {
@@ -23,6 +25,10 @@ struct VertexBasic {
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 texCoor;
+};
+struct terrainVertex :VertexBasic
+{
+	glm::vec3 shadow;
 };
 struct EnemyVertex :VertexBasic {
 	glm::vec3 pos_idle;
@@ -178,48 +184,91 @@ class Terrain: public Model
 public:
 	int NbVertX, NbVertY;
 	int startingRow = 0; //draw from this row
-	std::vector <std::vector<VertexBasic>> grid;
+	std::vector <std::vector<terrainVertex>> grid;
 	float updateInterval = 1.0;
-	std::vector <VertexBasic> vertices;
+	std::vector <terrainVertex> vertices;
 	double lastUpdateTime = 0;
 	double lastFrameTime = 0;
-	Terrain(int NbVertX, int NbVertY)
+	Terrain(int NbVertX, int NbVertY, glm::vec3 lightDir)
 	{
-		position = { -5.0,-5.0,5.0 };
+		position = { -5.0,-5.0,-5.0 };
 		rotateAxis = { 1.0,0.0,0.0 };
-		rotateAngle = 3.14159 / 2;
+		rotateAngle = 0;
 		this->NbVertX = NbVertX;
 		this->NbVertY = NbVertY;
 		lastUpdateTime = glfwGetTime();
 		lastFrameTime = lastUpdateTime;
-		generateTerrain();
+		generateTerrain(lightDir);
 	}
-	void generateTerrain()
+	void generateTerrain(glm::vec3 lightDir)
 	{
 		// i - row; j - column
 		for (int i = 0; i < NbVertY; i++)
 		{
-			std::vector<VertexBasic> row;
+			std::vector<terrainVertex> row;
 			for (int j = 0; j < NbVertX; j++)
 			{
-				VertexBasic vertex;
+				terrainVertex vertex;
 				float height;
 				height = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-				vertex.pos = { j, i , height };
+				//height = abs(sin(i*j));
+				vertex.pos = { j, height, i};
 				vertex.texCoor = { j / float(NbVertX), i / float(NbVertY) };
+				vertex.normal = { 0,0,0 };
+				vertex.shadow = { 1,1,1 };
 				row.push_back(vertex);
 			}
 			grid.push_back(row);
 		}
+		calculateNormals();
+
+		computeShadow(lightDir);
 		generateTriangles();
 	}
+
+	void calculateNormals()
+	{
+		for (int i = 0; i < NbVertY; i++)
+		{
+			for (int j = 0; j < NbVertX - 1; j++)
+			{
+				VertexBasic *vertex_1, *vertex_2, *vertex_3, *vertex_4;
+				vertex_1 = &grid[i][j];
+				vertex_2 = &grid[i][j + 1];
+
+				if (i == NbVertY - 1)
+				{
+					vertex_3 = &grid[0][j + 1];
+					vertex_4 = &grid[0][j];
+				}
+				else
+				{
+					vertex_3 = &grid[(i + 1)][j + 1];
+					vertex_4 = &grid[(i + 1)][j];
+				}
+
+				glm::vec3 normal_1, normal_2;
+				normal_1 = glm::triangleNormal(vertex_1->pos, vertex_2->pos, vertex_3->pos);
+				normal_2 = glm::triangleNormal(vertex_3->pos, vertex_4->pos, vertex_1->pos);
+
+				vertex_1->normal += normal_1;
+				vertex_2->normal += normal_1;
+				vertex_3->normal += normal_1;
+				
+				vertex_3->normal = normal_2;
+				vertex_4->normal = normal_2;
+				vertex_1->normal = normal_2;
+			}
+		}
+	}
+
 	void generateTriangles()
 	{
 		for (int i = 0; i < NbVertY; i++)
 		{
 			for (int j = 0; j < NbVertX - 1; j++)
 			{
-				VertexBasic vertex_1, vertex_2, vertex_3, vertex_4;
+				terrainVertex vertex_1, vertex_2, vertex_3, vertex_4;
 				vertex_1 = grid[i][j];
 				vertex_2 = grid[i][j + 1];
 
@@ -227,8 +276,8 @@ public:
 				{
 					vertex_3 = grid[0][j + 1];
 					vertex_4 = grid[0][j];
-					vertex_3.pos.y += NbVertY;
-					vertex_4.pos.y += NbVertY;
+					vertex_3.pos.z += NbVertY;
+					vertex_4.pos.z += NbVertY;
 					vertex_3.texCoor.y = 1.0;
 					vertex_4.texCoor.y = 1.0;
 				}
@@ -238,30 +287,78 @@ public:
 					vertex_4 = grid[(i + 1)][j];
 				}
 
-				glm::vec3 normal_1, normal_2;
-				normal_1 = glm::triangleNormal(vertex_1.pos, vertex_2.pos, vertex_3.pos);
-				normal_2 = glm::triangleNormal(vertex_3.pos, vertex_4.pos, vertex_1.pos);
+				vertex_1.normal = glm::normalize(vertex_1.normal);
+				vertex_2.normal = glm::normalize(vertex_2.normal);
+				vertex_3.normal = glm::normalize(vertex_3.normal);
+				vertex_4.normal = glm::normalize(vertex_4.normal);
 
-				vertex_1.normal = normal_1;
-				vertex_2.normal = normal_1;
-				vertex_3.normal = normal_1;
 				vertices.push_back(vertex_1);
 				vertices.push_back(vertex_2);
 				vertices.push_back(vertex_3);
 
-				vertex_3.normal = normal_2;
-				vertex_4.normal = normal_2;
-				vertex_1.normal = normal_2;
 				vertices.push_back(vertex_3);
 				vertices.push_back(vertex_4);
 				vertices.push_back(vertex_1);
 			}
 		}
 	}
+
+	void computeShadow(glm::vec3 lightDir)
+	{
+		// i - row; j - column
+		for (int i = 0; i < NbVertY; i++)
+		{
+			for (int j = 0; j < NbVertX; j++)
+			{
+				bool inShadow = false;
+				terrainVertex vertex = grid[i][j];
+				for (int ii = 0; ii < NbVertY; ii++)
+				{
+					for (int jj = 0; jj < NbVertX - 1; jj++)
+					{
+						terrainVertex vertex_1, vertex_2, vertex_3, vertex_4;
+						vertex_1 = grid[(i + ii) % NbVertY][jj];
+						vertex_2 = grid[(i + ii) % NbVertY][jj+ 1];
+						vertex_3 = grid[(i + ii + 1) % NbVertY][jj + 1];
+						vertex_4 = grid[(i + ii + 1) % NbVertY][jj];
+						
+						if (ii == 0 && jj == j || ii == 0 && jj + 1 == j || ii + 1 == 0 && jj == j || ii + 1 == 0 && jj + 1 == j)
+							continue;
+
+						if (i + ii >= NbVertY)
+						{
+							vertex_1.pos.z += NbVertY;
+							vertex_2.pos.z += NbVertY;
+							vertex_3.pos.z += NbVertY;
+							vertex_4.pos.z += NbVertY;
+						}
+
+						glm::vec3 baryPosition;
+						inShadow = glm::intersectRayTriangle(vertex.pos, -lightDir, vertex_1.pos, vertex_2.pos, vertex_3.pos, baryPosition);
+						if (inShadow == true)
+							break;
+						inShadow = glm::intersectRayTriangle(vertex.pos, -lightDir, vertex_3.pos, vertex_4.pos, vertex_1.pos, baryPosition);
+						if (inShadow == true)
+							break;
+					}
+					if (inShadow == true)
+						break;
+				}
+				if (inShadow == true)
+				{
+					grid[i][j].shadow = { 0,0,0 };
+					std::cerr << i << '\t' << j << std::endl;
+				}
+					
+			}
+		}
+	}
+
+
 	void update()
 	{
 		double currentTime = glfwGetTime();
-		position.z += (currentTime - lastFrameTime) / updateInterval;
+		position.z -= (currentTime - lastFrameTime) / updateInterval;
 		lastFrameTime = currentTime;
 
 		if (currentTime - lastUpdateTime < updateInterval)
@@ -270,8 +367,7 @@ public:
 		int startingIndex = 2 * 3 * (NbVertX - 1) * startingRow;
 		for (int i = 0; i < 2 * 3 * (NbVertX - 1); i++)
 		{
-			vertices[startingIndex + i].pos.y += NbVertY;
-
+			vertices[startingIndex + i].pos.z += NbVertY;
 		}
 		startingRow++;
 		startingRow %= NbVertY;

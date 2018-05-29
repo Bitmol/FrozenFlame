@@ -35,13 +35,14 @@ double lastFrameTime = 0.0;
 
 // global variables
 
+glm::vec3 lightDir = { 0,-1,1 };
 int Model::textureCount = 1;
 
 Anivia anivia;
 Enemy enemy;
 
 Shape icicle, flame, icicleDiamond;
-Terrain terrain(15, 15);
+Terrain terrain(20, 20, lightDir);
 
 
 // Configuration
@@ -301,6 +302,7 @@ void initEnemy(Enemy &enemy)
 	enemy.rotateAxis = { 0,1,0 };
 	enemy.rotateAngle = 3.14159;
 	enemy.movement.y = -0.0005;
+	enemy.mixFactor.increment = 0.005;
 }
 int loadAnivia(Anivia &anivia)
 {
@@ -645,25 +647,29 @@ int loadTerrain(Terrain &terrain)
 	{
 		glGenBuffers(1, &terrain.vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glBufferData(GL_ARRAY_BUFFER, terrain.vertices.size() * sizeof(VertexBasic), terrain.vertices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, terrain.vertices.size() * sizeof(terrainVertex), terrain.vertices.data(), GL_STATIC_DRAW);
 
 		glGenVertexArrays(1, &terrain.vao);
 		glBindVertexArray(terrain.vao);
 
 		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(terrainVertex), reinterpret_cast<void*>(offsetof(terrainVertex, pos)));
 		glEnableVertexAttribArray(0);
 
 		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(terrainVertex), reinterpret_cast<void*>(offsetof(terrainVertex, normal)));
 		glEnableVertexAttribArray(1);
 
 		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(terrainVertex), reinterpret_cast<void*>(offsetof(terrainVertex, texCoor)));
 		glEnableVertexAttribArray(8);
+
+		glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
+		glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(terrainVertex), reinterpret_cast<void*>(offsetof(terrainVertex, shadow)));
+		glEnableVertexAttribArray(9);
 	}
 	// add texture for terrain
-	terrain.loadTexture("terrain.png");
+	terrain.loadTexture("grassdirt.jpg");
 
 	
 	return 0;
@@ -1006,9 +1012,8 @@ int main() {
 
 		// update terrain vertices
 		{
-			
 			glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, terrain.vertices.size() * sizeof(VertexBasic), terrain.vertices.data());
+			glBufferSubData(GL_ARRAY_BUFFER, 0, terrain.vertices.size() * sizeof(terrainVertex), terrain.vertices.data());
 			//glBindVertexArray(terrain.vao);
 
 		}

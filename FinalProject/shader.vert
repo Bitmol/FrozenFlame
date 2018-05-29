@@ -9,6 +9,7 @@ layout(location = 10) uniform vec3 pos_offset = vec3(0, 0, 0);
 layout(location = 11) uniform vec3 rotateAxis = vec3(0, 1, 0);
 layout(location = 12) uniform float rotateAngle = 0.0;
 layout(location = 13) uniform float scaleFactor = 1.0;
+layout(location = 14) uniform bool useShadow = false;
 
 
 // Per-vertex attributes
@@ -21,11 +22,13 @@ layout(location = 5) in vec3 normal_attack;
 layout(location = 6) in vec3 pos_dead; 
 layout(location = 7) in vec3 normal_dead; 
 layout(location = 8) in vec2 texCoor;
+layout(location = 9) in vec3 shadow;
 
 // Data to pass to fragment shader
 out vec3 fragPos;
 out vec3 fragNormal;
 out vec2 fragTexCoor;
+out vec3 fragShadow;
 
 mat4 rotationMatrix(vec3 axis, float angle)
 {
@@ -77,4 +80,5 @@ void main() {
     fragPos = pos_current;
     fragNormal = normal_current;
 	fragTexCoor = texCoor;
+	fragShadow = shadow;
 }
