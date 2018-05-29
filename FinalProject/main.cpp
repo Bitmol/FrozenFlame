@@ -157,7 +157,7 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		if (action == GLFW_PRESS)movement.x = moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
-	case GLFW_KEY_3:
+	case GLFW_KEY_SPACE:
 		if (action == GLFW_PRESS) icicle.state = TRIGGERED;
 		if (action == GLFW_RELEASE) icicle.state = SHOT;
 		break;
@@ -665,29 +665,31 @@ int loadTerrain(Terrain &terrain)
 	// add texture for terrain
 	terrain.loadTexture("terrain.png");
 
-	///////////////icicle
-	{
-		icicle.loadTexture("icicle.png");
-		glGenBuffers(1, &icicle.vbo);
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glBufferData(GL_ARRAY_BUFFER, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data(), GL_STATIC_DRAW);
-
-		glGenVertexArrays(1, &icicle.vao);
-		glBindVertexArray(icicle.vao);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
-		glEnableVertexAttribArray(0);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
-		glEnableVertexAttribArray(1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
-		glEnableVertexAttribArray(8);
-	}
+	
 	return 0;
+}
+
+void loadIcicle()
+{
+	icicle.loadTexture("icicle.png");
+	glGenBuffers(1, &icicle.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+	glBufferData(GL_ARRAY_BUFFER, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data(), GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &icicle.vao);
+	glBindVertexArray(icicle.vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+	glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+	glEnableVertexAttribArray(8);
 }
 
 int main() {
@@ -846,12 +848,12 @@ int main() {
 	//std::vector<AniviaVertex> aniviaVertices;
 	//std::vector<EnemyVertex> enemyVertices;
 	std::vector<AniviaVertex> aniviaHeadVertices;
-
 	
 	loadAnivia(anivia);
 	loadEnemy(enemy);
 	loadTerrain(terrain);
-	
+	loadIcicle();
+
 	//////////////////// Create Vertex Buffer Object
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
