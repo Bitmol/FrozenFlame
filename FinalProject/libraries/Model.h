@@ -451,7 +451,6 @@ public:
 
 	void fire(Camera camera, glm::vec2 mouseScreenCoor)
 	{
-		state == SHOT;
 		glm::vec3 forward = glm::normalize(camera.forward);
 		glm::vec3 up = glm::normalize(camera.up);
 		glm::vec3 right = glm::normalize(glm::cross(forward, up));
@@ -488,7 +487,7 @@ public:
 		}
 		else if (state == SHOT)
 		{
-			move();
+  			move();
 			glm::vec2 screenCoor = getScreenCoor(camera);
 			if (screenCoor.x <= 0 || screenCoor.x >= 1 || screenCoor.y <= 0 || screenCoor.y >= 1)
 				state = WAITING;
@@ -496,12 +495,13 @@ public:
 		else if (state == WAITING)
 		{
 			scaleFactor = 0.0;
+
+			position = followPosition;
 		}
 		else if (state == LOADING)
 		{
 			rotateAxis = { 0, 1, 0 };
 			rotateAngle = -angle;
-			offset.z += 0.01;
 			position = followPosition ;
 			scaleFactor = scaleFactor >= 1.0? 1.0:scaleFactor+0.01;
 			if (scaleFactor >= 1)

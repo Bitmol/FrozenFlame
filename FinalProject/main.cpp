@@ -189,37 +189,26 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
 	case GLFW_KEY_SPACE:
-		/*for (int i = 0; i < icicles.size(); i++)
-		{
-			std::cerr << icicles[i].state;
-		}
-		std::cerr << std::endl;*/
-		std::cerr << currentIcicle << std::endl;
+		//for (int i = 0; i < icicles.size(); i++)
+		//{
+		//	std::cerr << icicles[i].state;
+		//}
+		//std::cerr << std::endl;
+		//std::cerr << currentIcicle << std::endl;
 		if (action == GLFW_PRESS)
 		{
 			if (currentIcicle != -1)
 			{
 				icicles[currentIcicle].state = TRIGGERED;
-
 			}
 		}
 		if (action == GLFW_RELEASE)
 		{
-			if (icicles[currentIcicle].state == TRIGGERED)
-			{
-				icicles[currentIcicle].state = SHOT;
-			}
-			for (int i = 0; i < icicles.size(); i++)
-			{
-				if (icicles[i].state == WAITING)
-				{
-					icicles[currentIcicle].state = LOADING;
-					currentIcicle = i;
-					break;
-				}
-					
-
-			}
+			
+			icicles[currentIcicle].state = SHOT;
+			currentIcicle++;
+			currentIcicle %= icicles.size();
+			icicles[currentIcicle].state = LOADING;
 		}
 		break;
 	default:
@@ -838,7 +827,7 @@ int main() {
 	}
 
 	glfwSetKeyCallback(window, keyboardHandler);
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
+	//glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 	glfwSetMouseButtonCallback(window, mouseButtonHandler);
 	glfwSetCursorPosCallback(window, cursorPosHandler);
 
@@ -1039,8 +1028,19 @@ int main() {
 	//mainCamera.forward  = -mainCamera.position;
 	mainCamera.forward = glm::vec3(0.0f, -1.0f, -0.0f);
 
+	StateType lastState = IDLE;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
+		
+		//if (lastState != icicles[0].state)
+		//{
+		//	std::cerr << icicles[0].state << std::endl;
+		//	lastState = icicles[0].state;
+
+		//}
+
+		//std::cerr << icicles[0].position.x <<'\t' << icicles[0].position.z << std::endl;
 
 		//update 
 		anivia.move(mainCamera);
