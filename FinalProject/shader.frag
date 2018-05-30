@@ -11,6 +11,7 @@ layout(location = 14) uniform bool useShadow = false; // use precomputed shadow
 layout(location = 15) uniform bool uniColor = false;
 layout(location = 16) uniform bool onlyWings = false;
 layout(location = 17) uniform bool onlyBody = false;
+layout(location = 18) uniform float opacity = 1.0;
 
 // Output for on-screen color
 layout(location = 0) out vec4 outColor;
@@ -25,7 +26,7 @@ void main() {
 
 	if(onlyWings == true)
 	{
-		if (!(fragPos.z < 1.95 && abs(fragPos.x) < 0.5 && fragPos.y > 1.1))
+		if (!(fragPos.z < 2.25 && abs(fragPos.x) < 0.5 && fragPos.y > 1.1))
 			discard;
 	}
 	if(onlyBody == true)
@@ -87,7 +88,7 @@ void main() {
 
 //	outColor = vec4(color.xyz, 1.0);
 	vec3 phongColor = color.xyz * (diffuse*0.3 + 0.5) + 0.5*pow(specular, 30)*vec3(1,1,1);
-	outColor = vec4(phongColor*visibility, 1.0);
+	outColor = vec4(phongColor*visibility, opacity);
 //    outColor = vec4(color.xyz * (diffuse * 0.5 + 0.5), 1.0);
 
 }

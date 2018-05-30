@@ -115,7 +115,7 @@ public:
 		glUniform1f(glGetUniformLocation(program, "useShadow"), false);
 		glUniform1f(glGetUniformLocation(program, "uniColor"), false);
 		glUniform1f(glGetUniformLocation(program, "onlyWings"), false);
-
+		glUniform1f(glGetUniformLocation(program, "opacity"), 1.0);
 		glUniform1f(glGetUniformLocation(program, "onlyBody"), false);
 	}
 
@@ -150,7 +150,7 @@ public:
 
 	void updateMixFactor(double timeInterval)
 	{
-		if (state == IDLE)
+		if (state == IDLE || state == DAMAGE1 || state == DAMAGE2|| state == DAMAGE3)
 		{
 			if (mixFactor.attack > 0)
 				mixFactor.attack -= abs(mixFactor.increment);
@@ -206,13 +206,17 @@ public:
 	GLuint vao_tex, vbo_tex;
 	std::vector<BossVertex> texturedVertices;
 	std::vector<std::vector<BossVertex>> simplifiedVertices;
-	void passUniform(GLuint program, bool uniColor = true, bool onlyWings = false, bool onlyBody = false)
+	void passUniform(GLuint program, bool uniColor = true, bool onlyWings = false, bool onlyBody = false, bool passMixFactor = false)
 	{
 		Model::passUniform(program);
 
-		glUniform1f(glGetUniformLocation(program, "mixFactor_idle"), mixFactor.idle);
-		glUniform1f(glGetUniformLocation(program, "mixFactor_attack"), mixFactor.attack);
-		glUniform1f(glGetUniformLocation(program, "mixFactor_dead"), mixFactor.dead);
+		if (passMixFactor)
+		{
+
+			glUniform1f(glGetUniformLocation(program, "mixFactor_idle"), mixFactor.idle);
+			glUniform1f(glGetUniformLocation(program, "mixFactor_attack"), mixFactor.attack);
+			glUniform1f(glGetUniformLocation(program, "mixFactor_dead"), mixFactor.dead);
+		}
 		glUniform1f(glGetUniformLocation(program, "uniColor"), uniColor);
 		glUniform1f(glGetUniformLocation(program, "onlyWings"), onlyWings);
 		glUniform1f(glGetUniformLocation(program, "onlyBody"), onlyBody);
@@ -572,5 +576,16 @@ public:
 				break;
 			}
 		}
+	}
+};
+
+class IceBerg : public Model
+{
+public:
+	std::vector<VertexBasic> vertices;
+	void passUniform(GLuint program, float opacity = 0.5)
+	{
+		Model::passUniform(program);
+		glUniform1f(glGetUniformLocation(program, "opacity"), opacity);
 	}
 };

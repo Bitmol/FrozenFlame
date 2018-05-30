@@ -52,6 +52,7 @@ Anivia anivia;
 //Enemy enemy;
 Boss boss;
 std::vector<Enemy> enemies;
+IceBerg iceBerg;
 
 Shape flame, icicleDiamond;
 std::vector<Shape> icicles;
@@ -275,9 +276,7 @@ void initBoss(Boss &boss)
 		}
 
 		boss.simplifiedVertices.push_back(formatMeshVertices(simplified.vertices, simplified.triangles));
-	}
-
-	
+	}	
 }
 
 void initIcicles(std::vector<Shape> &icicles)
@@ -424,7 +423,82 @@ void initFlames(std::vector<Shape> &flames)
 	flames[0].state = LOADING;
 }
 
+void initIceBerg(Model &iceBerg)
+{
+	iceBerg.scaleFactor = 0.15;
+	iceBerg.position = { 0,0.8,2.5 };
+}
 
+int loadIceBerg(IceBerg &iceBerg)
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
+	//load
+	{
+		int vertexCounter = 0;
+		// load initial pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "iceberg.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				EnemyVertex vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				// Retrieve coordinates for texture
+				vertex.texCoor = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				iceBerg.vertices.push_back(vertex);
+			}
+		}
+
+		// load texture for enemy
+		iceBerg.loadTexture("iceberg.jpg");
+
+		/////// handle the vertices of enemy
+		{
+			glGenBuffers(1, &iceBerg.vbo);
+			glBindBuffer(GL_ARRAY_BUFFER, iceBerg.vbo);
+			glBufferData(GL_ARRAY_BUFFER, iceBerg.vertices.size() * sizeof(VertexBasic), iceBerg.vertices.data(), GL_STATIC_DRAW);
+
+			glGenVertexArrays(1, &iceBerg.vao);
+			glBindVertexArray(iceBerg.vao);
+
+			glBindBuffer(GL_ARRAY_BUFFER, iceBerg.vbo);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+			glEnableVertexAttribArray(0);
+
+			glBindBuffer(GL_ARRAY_BUFFER, iceBerg.vbo);
+			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+			glEnableVertexAttribArray(1);
+
+			glBindBuffer(GL_ARRAY_BUFFER, iceBerg.vbo);
+			glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+			glEnableVertexAttribArray(8);
+		}
+		return 0;
+	}
+}
 
 void initEnemy(Enemy &enemy)
 {
@@ -1077,6 +1151,7 @@ int main() {
 	//initEnemy(enemy);
 	initBoss(boss);
 	initEnemies(enemies);
+	initIceBerg(iceBerg);
 
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW!" << std::endl;
@@ -1241,6 +1316,7 @@ int main() {
 
 
 	loadBoss(boss);
+	loadIceBerg(iceBerg);
 
 	//////////////////// Create Vertex Buffer Object
 	GLuint vbo;
@@ -1329,6 +1405,10 @@ int main() {
 		}
 		
 		boss.updateMixFactor(timeInterval);
+		if (boss.state == DEAD)
+		{
+			boss.mixFactor.dead = 0.0;
+		}
 		boss.update(); // update the vertices according to state
 
 		terrain.update();
@@ -1479,6 +1559,9 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		
 		glBindVertexArray(anivia.vao);
 		anivia.passUniform(mainProgram);
@@ -1515,9 +1598,10 @@ int main() {
 		glBindVertexArray(boss.vao);
 		if (boss.state != IDLE) {
 			boss.passUniform(mainProgram, true, true, false);
+
+			glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
 		}
 		//boss.passUniform(mainProgram, true, true, false);
-		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
 
 		float scaleFactor = boss.scaleFactor;
 		boss.scaleFactor = 0.2;
@@ -1525,7 +1609,7 @@ int main() {
 		boss.position.y -= 1;
 
 		glBindVertexArray(boss.vao_tex);
-		boss.passUniform(mainProgram, false, false, bossHit);
+		boss.passUniform(mainProgram, false, false, true, true);
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
 
 		
@@ -1605,6 +1689,32 @@ int main() {
 			glDrawArrays(GL_TRIANGLES, 0, crystal.vertices.size());
 			//std::cerr << flame.state;
 		}
+
+
+		glBindVertexArray(iceBerg.vao);
+		float opacity;
+		switch (boss.state)
+		{
+		case IDLE:
+			opacity = 0.0;
+			break;
+		case DAMAGE1:
+			opacity = 0.1;
+			break;
+		case DAMAGE2:
+			opacity = 0.3;
+			break;
+		case DAMAGE3:
+			opacity = 0.5;
+			break;
+		case DEAD:
+			opacity = 0.8;
+			break;
+		default:
+			break;
+		}
+		iceBerg.passUniform(mainProgram, opacity);
+		glDrawArrays(GL_TRIANGLES, 0, iceBerg.vertices.size());
 
 		// Present result to the screen
 		glfwSwapBuffers(window);
