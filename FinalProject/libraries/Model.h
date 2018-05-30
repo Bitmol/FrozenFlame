@@ -129,7 +129,6 @@ class Character: public Model
 public:
 	StateType state = IDLE;
 	MixFactor mixFactor;
-	MixFactor mixFactorInterval = {1.0, 1.0, 1.0, 1.0};
 	float moveSpeed = 0.1;
 	glm::vec3 movement = { 0,0,0 };
 	float safeDistance = 1.0;
@@ -513,7 +512,7 @@ public:
 			rotateAxis = { 0, 1, 0 };
 			rotateAngle = -angle;
 			position = followPosition ;
-			scaleFactor = scaleFactor >= 0.75? 0.75:scaleFactor+0.1;
+			scaleFactor = scaleFactor >= 0.75? 0.75:scaleFactor+0.05;
 			if (scaleFactor >= 0.75)
 				state = IDLE;
 		}

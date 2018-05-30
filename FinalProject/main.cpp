@@ -48,7 +48,7 @@ glm::vec3 lightDir = { 0,-1,1 };
 int Model::textureCount = 1;
 
 Anivia anivia;
-Enemy enemy;
+//Enemy enemy;
 Boss boss;
 std::vector<Enemy> enemies;
 
@@ -247,6 +247,7 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 void initAnivia(Anivia &anivia)
 {
 	anivia.coolDownTime = 1.0;
+	anivia.mixFactor.increment = 0.05;
 }
 
 void initBoss(Boss &boss)
@@ -393,20 +394,22 @@ void initFlame(Shape &shape)
 }
 void initEnemy(Enemy &enemy)
 {
-	enemy.position = { 0,0,5 };
+	enemy.position = { 0,0,4 };
 	enemy.scaleFactor = 0.3;
 	enemy.rotateAxis = { 0,1,0 };
 	enemy.rotateAngle = 3.14159;
-	enemy.movement.y = -0.01;
+	enemy.movement.y = -0.03;
 }
 
 void initEnemies(std::vector<Enemy> &enemies)
 {
 	Enemy enemy;
 	initEnemy(enemy);
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		enemy.position.x = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		enemy.position.z += 5.0;
+		enemies.push_back(enemy);
 	}
 }
 int loadAnivia(Anivia &anivia)
@@ -746,6 +749,15 @@ int loadEnemy(Enemy &enemy)
 	}
 	return 0;
 }
+
+void loadEnemies(std::vector<Enemy> &enemies)
+{
+	for (int i = 0; i < enemies.size(); i++)
+	{
+		loadEnemy(enemies[i]);
+	}
+}
+
 int loadBoss(Boss &boss)
 {
 
@@ -830,8 +842,9 @@ int main() {
 	//init
 	initAnivia(anivia);
 	initIcicles();
-	initEnemy(enemy);
+	//initEnemy(enemy);
 	initBoss(boss);
+	initEnemies(enemies);
 
 	if (!glfwInit()) {
 		std::cerr << "Failed to initialize GLFW!" << std::endl;
@@ -987,7 +1000,8 @@ int main() {
 	std::vector<AniviaVertex> aniviaHeadVertices;
 	
 	loadAnivia(anivia);
-	loadEnemy(enemy);
+	//loadEnemy(enemy);
+	loadEnemies(enemies);
 	loadTerrain(terrain);
 	for (int i = 0; i < icicles.size(); i++)
 	{
@@ -1076,9 +1090,14 @@ int main() {
 		anivia.move(mainCamera);
 		anivia.updateMixFactor(timeInterval);
 		
-		enemy.move(mainCamera);
-		enemy.updateMixFactor(timeInterval);
+		for (int i = 0; i < enemies.size(); i++)
+		{
+			Enemy &enemy = enemies[i];
+			enemy.move(mainCamera);
+			enemy.updateMixFactor(timeInterval);
 
+		}
+		
 		boss.update();
 
 		terrain.update();
@@ -1092,9 +1111,13 @@ int main() {
 			double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
 			icicle.update(mainCamera, anivia.position, mouse.screenCoor, timeInterval);
 			if (icicle.state == SHOT)
-			{
-				icicle.detectCollision(enemy);
+			{				
 				icicle.detectCollision(boss);
+				for (int j = 0; j < enemies.size(); j++)
+				{
+					Enemy &enemy = enemies[j];
+					icicle.detectCollision(enemy);
+				}
 			}
 			
 		}
@@ -1168,11 +1191,15 @@ int main() {
 		anivia.passUniform(mainProgram);
 		glDrawArrays(GL_TRIANGLES, 0, anivia.vertices.size());
 
-		glBindVertexArray(enemy.vao); 
-		enemy.passUniform(mainProgram);
 
-		glDrawArrays(GL_TRIANGLES, 0, enemy.vertices.size());
-
+		for (int i = 0; i < enemies.size(); i++)
+		{
+			Enemy &enemy = enemies[i];
+			glBindVertexArray(enemy.vao);
+			enemy.passUniform(mainProgram);
+			glDrawArrays(GL_TRIANGLES, 0, enemy.vertices.size());
+		}
+		
 
 		// update boss vertices
 		{
