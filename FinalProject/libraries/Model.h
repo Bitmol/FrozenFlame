@@ -253,7 +253,7 @@ public:
 	double lastFrameTime = 0;
 	Terrain(int NbVertX, int NbVertY, glm::vec3 lightDir)
 	{
-		position = { -5.0,-5.0,-5.0 };
+		position = { -6.0,-4.0,-6.0 };
 		rotateAxis = { 1.0,0.0,0.0 };
 		rotateAngle = 0;
 		this->NbVertX = NbVertX;

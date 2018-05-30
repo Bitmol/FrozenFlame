@@ -172,7 +172,7 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	switch (key) 
 	{
 	case GLFW_KEY_1:
-		anivia.state = DEAD;
+		boss.state = DAMAGE1;
 		break;
 	case GLFW_KEY_2:
 		if (action == GLFW_PRESS) lightView = !lightView;
@@ -180,19 +180,19 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	case GLFW_KEY_3:
 		boss.state = DAMAGE2;
 		break;
-	case GLFW_KEY_UP:
+	case GLFW_KEY_W:
 		if (action == GLFW_PRESS || action==GLFW_REPEAT) movement.y = moveSpeed;
 		if (action == GLFW_RELEASE) movement.y = 0.0;
 		break;
-	case GLFW_KEY_DOWN:
+	case GLFW_KEY_S:
 		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.y = -moveSpeed;
 		if (action == GLFW_RELEASE)movement.y = 0.0;
 		break;
-	case GLFW_KEY_LEFT:
+	case GLFW_KEY_A:
 		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.x = -moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
-	case GLFW_KEY_RIGHT:
+	case GLFW_KEY_D:
 		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.x = moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
@@ -255,7 +255,7 @@ void initAnivia(Anivia &anivia)
 void initBoss(Boss &boss)
 {
 	boss.state = IDLE;
-	boss.position = { 0,1,2 };
+	boss.position = { 0,1,2.2 };
 	boss.scaleFactor = 3;
 	boss.rotateAxis = { 0,1,0 };
 	boss.rotateAngle = 3.14159;
@@ -271,7 +271,7 @@ void initBoss(Boss &boss)
 		Mesh simplified;
 		simplified = grid.simplifyMesh(mesh, 70 - i * 10);
 		for (int y = 0; y < simplified.vertices.size(); y++) {
-			simplified.vertices[y].p[1] += 0.30;
+			simplified.vertices[y].p[1] += 0.50;
 			simplified.vertices[y].p[2] -= 0.17;
 		}
 
@@ -372,7 +372,7 @@ void initLifeCrystals(std::vector<Shape> &crystals)
 void initFlame(Shape &shape)
 {
 	const int vertexNumber = 8;
-	shape.moveSpeed = 0.5;
+	shape.moveSpeed = 1;
 	shape.scaleFactor = 1;
 	shape.rotateAxis = { 0,1,0 };
 	shape.offset = { 0,0,1 };
@@ -426,7 +426,7 @@ void initFlames(std::vector<Shape> &flames)
 void initIceBerg(Model &iceBerg)
 {
 	iceBerg.scaleFactor = 0.15;
-	iceBerg.position = { 0,0.8,2.5 };
+	iceBerg.position = { 0,1,2.8 };
 }
 
 int loadIceBerg(IceBerg &iceBerg)
@@ -1372,7 +1372,7 @@ int main() {
 	/////////////////// Create main camera
 	Camera mainCamera;
 	mainCamera.aspect = WIDTH / (float)HEIGHT;
-	mainCamera.position = glm::vec3(0.0f, 10.0f, 0.0f);
+	mainCamera.position = glm::vec3(0.0f, 12.0f, 0.0f);
 	//mainCamera.forward  = -mainCamera.position;
 	mainCamera.forward = glm::vec3(0.0f, -1.0f, -0.0f);
 
@@ -1432,12 +1432,16 @@ int main() {
 				
 		{
 			double currentTime = glfwGetTime();
-			if (currentTime - lastShot > boss.coolDownTime)
+			if (currentTime - lastShot > boss.coolDownTime && boss.state != DEAD)
 			{
 				flames[currentFlame].state = TRIGGERED;
 				currentFlame = (currentFlame + 1) % flames.size();
 				flames[currentFlame].state = LOADING;
 				lastShot = currentTime;
+			}
+			else if (boss.state == DEAD)
+			{
+				flames[currentFlame].state = WAITING;
 			}
 		}
 
@@ -1578,15 +1582,15 @@ int main() {
 		
 
 		//// update boss vertices
-		//{
-		//	glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
-		//	glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
-		//}
-		//glBindVertexArray(boss.vao);
-		//boss.passUniform(mainProgram, true, true, false);
-		//glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
-		//
-		//
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
+		}
+		/*glBindVertexArray(boss.vao);
+		boss.passUniform(mainProgram, true, true, false);
+		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
+		
+		*/
 
 		if (boss.state == IDLE) {
 			bossHit = false;
@@ -1604,12 +1608,12 @@ int main() {
 		//boss.passUniform(mainProgram, true, true, false);
 
 		float scaleFactor = boss.scaleFactor;
-		boss.scaleFactor = 0.2;
-		boss.position.z -= 0;
-		boss.position.y -= 1;
+		boss.scaleFactor = 0.22;
+		boss.position.z -= 0.1;
+		boss.position.y -= 0.5;
 
 		glBindVertexArray(boss.vao_tex);
-		boss.passUniform(mainProgram, false, false, true, true);
+		boss.passUniform(mainProgram, false, false, bossHit, true);
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
 
 		
@@ -1619,8 +1623,8 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());*/
 		
 		boss.scaleFactor = scaleFactor;
-		boss.position.z += 0;
-		boss.position.y += 1;
+		boss.position.z += 0.1;
+		boss.position.y += 0.5;
 		// update terrain vertices
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);

@@ -26,12 +26,12 @@ void main() {
 
 	if(onlyWings == true)
 	{
-		if (!(fragPos.z < 2.25 && abs(fragPos.x) < 0.5 && fragPos.y > 1.1))
+		if (!(fragPos.z < 2.25 && abs(fragPos.x) < 0.5 && fragPos.y > 2.5))
 			discard;
 	}
 	if(onlyBody == true)
 	{
-		if (fragPos.z < 2.22 && abs(fragPos.x) < 0.5 && fragPos.y > 1.7)
+		if (fragPos.z < 2.22 && abs(fragPos.x) < 0.5 && fragPos.y > 1.1)
 			discard;
 	}
 	// Output the normal as color
