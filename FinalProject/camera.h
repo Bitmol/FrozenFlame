@@ -46,7 +46,7 @@ struct Camera
 	glm::mat4 voMatrix() const
 	{
 		glm::mat4 oMatrix;
-		oMatrix = glm::ortho<float>(-5.0, 5.0, -5, 5,0, 30);
+		oMatrix = glm::ortho<float>(-8.0, 8.0, -8, 8,0, 30);
 		return oMatrix * vMatrix();
 	}
 

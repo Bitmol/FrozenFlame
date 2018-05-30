@@ -55,7 +55,9 @@ std::vector<Enemy> enemies;
 
 Shape flame, icicleDiamond;
 std::vector<Shape> icicles;
+std::vector<Shape> flames;
 int currentIcicle = 0;
+int currentFlame = 0;
 
 Terrain terrain(20, 20, lightDir);
 
@@ -167,7 +169,7 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	switch (key) 
 	{
 	case GLFW_KEY_1:
-		boss.state = IDLE;
+		anivia.state = DEAD;
 		break;
 	case GLFW_KEY_2:
 		if (action == GLFW_PRESS) lightView = !lightView;
@@ -192,12 +194,6 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		if (action == GLFW_RELEASE)movement.x = 0.0;
 		break;
 	case GLFW_KEY_SPACE:
-		//for (int i = 0; i < icicles.size(); i++)
-		//{
-		//	std::cerr << icicles[i].state;
-		//}
-		//std::cerr << std::endl;
-		//std::cerr << currentIcicle << std::endl;
 		if (action == GLFW_PRESS)
 		{
 			if (anivia.state == IDLE && anivia.coolDownCounter <= 0)
@@ -250,6 +246,7 @@ void initAnivia(Anivia &anivia)
 	anivia.position.z = -3;
 	anivia.coolDownTime = 1.0;
 	anivia.mixFactor.increment = 0.05;
+	anivia.safeDistance = 2.0;
 }
 
 void initBoss(Boss &boss)
@@ -260,6 +257,7 @@ void initBoss(Boss &boss)
 	boss.rotateAxis = { 0,1,0 };
 	boss.rotateAngle = 3.14159;
 	boss.safeDistance = 2.0;
+	boss.coolDownTime = 3.0;
 	mesh.loadMesh("boss.obj");
 	boss.vertices = formatMeshVertices(mesh.vertices, mesh.triangles);
 	boss.simplifiedVertices.push_back(boss.vertices);
@@ -275,7 +273,7 @@ void initBoss(Boss &boss)
 	
 }
 
-void initIcicles()
+void initIcicles(std::vector<Shape> &icicles)
 {
 	Shape shape;
 	const int vertexNumber = 5;
@@ -322,10 +320,10 @@ void initIcicles()
 void initIcicleDiamond(Shape &shape)
 {
 	const int vertexNumber = 4;
-	shape.moveSpeed = 0.005;
+	shape.moveSpeed = 3;
 	shape.scaleFactor = 1;
 	shape.rotateAxis = { 0,1,0 };
-	shape.offset = { 0,0,1 };
+	shape.offset = { 0,1,1 };
 	float vertices[vertexNumber][3] =
 	{
 		0, 0, -0.8,//Vertex 0
@@ -356,7 +354,7 @@ void initIcicleDiamond(Shape &shape)
 void initFlame(Shape &shape)
 {
 	const int vertexNumber = 8;
-	shape.moveSpeed = 0.005;
+	shape.moveSpeed = 0.5;
 	shape.scaleFactor = 1;
 	shape.rotateAxis = { 0,1,0 };
 	shape.offset = { 0,0,1 };
@@ -394,6 +392,19 @@ void initFlame(Shape &shape)
 	shape.indices = { 0,1,2,0,2,3,0,3,4,0,4,5,0,5,6,0,6,7 };
 	shape.vertices = shape.generateVertices();
 }
+
+void initFlames(std::vector<Shape> &flames)
+{
+	Shape shape;
+	initFlame(shape);
+
+	for (int i = 0; i < 5; i++)
+	{
+		flames.push_back(shape);
+	}
+	flames[0].state = LOADING;
+}
+
 void initEnemy(Enemy &enemy)
 {
 	enemy.position = { 0,0,4 };
@@ -989,10 +1000,35 @@ void loadIcicle(Shape &icicle)
 	glEnableVertexAttribArray(8);
 }
 
+
+void loadFlame(Shape &flame)
+{
+	flame.loadTexture("fire2.png");
+	glGenBuffers(1, &flame.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+	glBufferData(GL_ARRAY_BUFFER, flame.vertices.size() * sizeof(VertexBasic), flame.vertices.data(), GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &flame.vao);
+	glBindVertexArray(flame.vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+	glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+	glEnableVertexAttribArray(8);
+}
+
 int main() {
 	//init
 	initAnivia(anivia);
-	initIcicles();
+	initIcicles(icicles);
+	initFlames(flames);
 	//initEnemy(enemy);
 	initBoss(boss);
 	initEnemies(enemies);
@@ -1159,6 +1195,12 @@ int main() {
 		loadIcicle(icicles[i]);
 	}
 	
+	for (int i = 0; i < flames.size(); i++)
+	{
+		loadFlame(flames[i]);
+	}
+
+
 	loadBoss(boss);
 
 	//////////////////// Create Vertex Buffer Object
@@ -1225,6 +1267,7 @@ int main() {
 	lightSource.forward = -lightSource.position;
 
 	StateType lastState = IDLE;
+	double lastShot = glfwGetTime();
 
 	// Main loop
 	while (!glfwWindowShouldClose(window)) {
@@ -1233,15 +1276,7 @@ int main() {
 		if (timeInterval < 1.0 / maxFrameRate)
 			continue;
 		lastFrameTime = glfwGetTime();
-		//if (lastState != icicles[0].state)
-		//{
-		//	std::cerr << icicles[0].state << std::endl;
-		//	lastState = icicles[0].state;
-
-		//}
-
-		//std::cerr << icicles[0].position.x <<'\t' << icicles[0].position.z << std::endl;
-
+		
 		//update 
 		anivia.move(mainCamera);
 		anivia.updateMixFactor(timeInterval);
@@ -1257,14 +1292,12 @@ int main() {
 		boss.update();
 
 		terrain.update();
-
-
+		
 		for(int i = 0; i < icicles.size(); i++)
 		{
 			Shape &icicle = icicles[i];
 
 			glm::vec2 screenCoor = icicle.getScreenCoor(mainCamera);
-			double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouse.screenCoor - screenCoor));
 			icicle.update(mainCamera, anivia.position, mouse.screenCoor, timeInterval);
 			if (icicle.state == SHOT)
 			{				
@@ -1275,9 +1308,36 @@ int main() {
 					icicle.detectCollision(enemy);
 				}
 			}
-			
 		}
-		
+				
+		{
+			double currentTime = glfwGetTime();
+			if (currentTime - lastShot > boss.coolDownTime)
+			{
+				flames[currentFlame].state = TRIGGERED;
+				currentFlame = (currentFlame + 1) % flames.size();
+				flames[currentFlame].state = LOADING;
+				lastShot = currentTime;
+			}
+		}
+
+		for (int i = 0; i < flames.size(); i++)
+		{
+			Shape &flame = flames[i];
+
+			glm::vec2 screenCoor = flame.getScreenCoor(mainCamera);
+			flame.update(mainCamera, boss.position, anivia.getScreenCoor(mainCamera), timeInterval, 0.8);
+			if (flame.state == TRIGGERED)
+			{
+				flame.state = SHOT;
+				boss.state = ATTACK;
+			}
+			else if (flame.state == SHOT)
+			{
+				flame.detectCollision(anivia);
+			}
+
+		}
 		glfwPollEvents();
 
 		////////// Stub code for you to fill in order to render the shadow map
@@ -1321,16 +1381,6 @@ int main() {
 			for (int j = 0; j < icicles.size(); j++)
 			{
 				Shape & icicle = icicles[j];
-				for (int i = 0; i < icicle.vertices.size(); i++)
-				{
-					icicle.vertices[i].texCoor.x -= 0.001;
-					icicle.vertices[i].texCoor.y += 0.001;
-				}
-				{
-					glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
-					glBufferSubData(GL_ARRAY_BUFFER, 0, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data());
-					//glBindVertexArray(terrain.vao);
-				}
 				glBindVertexArray(icicle.vao);
 				icicle.passUniform(shadowProgram);
 				glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
@@ -1396,23 +1446,23 @@ int main() {
 		}
 		
 
-		// update boss vertices
-		{
-			glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
-		}
-		glBindVertexArray(boss.vao);
-		boss.passUniform(mainProgram, true, true, false);
-		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
-		
-		
+		//// update boss vertices
+		//{
+		//	glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
+		//	glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
+		//}
+		//glBindVertexArray(boss.vao);
+		//boss.passUniform(mainProgram, true, true, false);
+		//glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
+		//
+		//
 		float scaleFactor = boss.scaleFactor;
 		boss.scaleFactor = 0.2;
 		boss.position.z -= 0;
 		boss.position.y -= 1;
 
 		glBindVertexArray(boss.vao_tex);
-		boss.passUniform(mainProgram, false, false, true);
+		boss.passUniform(mainProgram, false, false, false);
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
 		
 		boss.scaleFactor = scaleFactor;
@@ -1435,8 +1485,8 @@ int main() {
 			Shape & icicle = icicles[j];
 			for (int i = 0; i < icicle.vertices.size(); i++)
 			{
-				icicle.vertices[i].texCoor.x -= 0.001;
-				icicle.vertices[i].texCoor.y += 0.001;
+				icicle.vertices[i].texCoor.x -= 0.01;
+				icicle.vertices[i].texCoor.y += 0.01;
 			}
 			{
 				glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
@@ -1448,6 +1498,26 @@ int main() {
 			glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
 		}
 		
+		// update flame vertices
+		for (int j = 0; j < flames.size(); j++)
+		{
+			Shape & flame = flames[j];
+			for (int i = 0; i < flame.vertices.size(); i++)
+			{
+				flame.vertices[i].texCoor.x += 0.01;
+				flame.vertices[i].texCoor.y -= 0.01;
+			}
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, flame.vertices.size() * sizeof(VertexBasic), flame.vertices.data());
+				//glBindVertexArray(terrain.vao);
+			}
+			glBindVertexArray(flame.vao);
+			flame.passUniform(mainProgram);
+			glDrawArrays(GL_TRIANGLES, 0, flame.vertices.size());
+			//std::cerr << flame.state;
+		}
+
 
 		// Present result to the screen
 		glfwSwapBuffers(window);

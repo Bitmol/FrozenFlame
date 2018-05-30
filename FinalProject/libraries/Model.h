@@ -233,20 +233,7 @@ public:
 			vertices = simplifiedVertices[5];
 			break;
 		}
-	}/*
-	void clearVertices()
-	{
-		for (int i = 0; i < vertices.size(); i++)
-		{
-			BossVertex vertex;
-			vertex.pos = { 0,0,0 };
-			vertex.normal = { 0,0,0 };
-			vertices[i] = vertex;
-		}
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(BossVertex), vertices.data());
-		glBindVertexArray(vao);
-	}*/
+	}
 };
 
 class Terrain: public Model
@@ -423,7 +410,6 @@ public:
 				if (inShadow == true)
 				{
 					grid[i][j].shadow = { 0.5,0.5,0.5 };
-					std::cerr << i << '\t' << j << std::endl;
 				}
 					
 			}
@@ -458,13 +444,13 @@ public:
 	std::vector<int> indices;
 	float radius = 1;
 	glm::vec3 offset = { 0,0,0 };
-	StateType state = IDLE;
-	float moveSpeed = 500;
+	StateType state = WAITING;
+	float moveSpeed = 1;
 	glm::vec3 moveNormal = { 0,0,0 };
 	std::vector<VertexBasic> vertices;
 
 
-	void fire(Camera camera, glm::vec2 mouseScreenCoor)
+	void fire(Camera camera, glm::vec2 targetScreenCoor)
 	{
 		glm::vec3 forward = glm::normalize(camera.forward);
 		glm::vec3 up = glm::normalize(camera.up);
@@ -474,7 +460,7 @@ public:
 		getScreenCoor(camera);
 
 		double angle;
-		angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouseScreenCoor - screenCoor));
+		angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(targetScreenCoor - screenCoor));
 		angle = -angle;
 
 		moveNormal = right * float(sin(angle)) + realUp * float(cos(angle));
@@ -485,7 +471,7 @@ public:
 		position += moveNormal * moveSpeed * float(timeInterval);
 	}
 
-	void update(Camera camera, glm::vec3 followPosition, glm::vec2 mouseScreenCoor, double timeInterval)
+	void update(Camera camera, glm::vec3 followPosition, glm::vec2 mouseScreenCoor, double timeInterval, double maxScaleFactor = 0.5)
 	{
 		glm::vec2 screenCoor = getScreenCoor(camera);
 		double angle = glm::orientedAngle(glm::vec2(0.0, 1.0), glm::normalize(mouseScreenCoor - screenCoor));
@@ -521,8 +507,8 @@ public:
 			rotateAxis = { 0, 1, 0 };
 			rotateAngle = -angle;
 			position = followPosition ;
-			scaleFactor = scaleFactor >= 0.5? 0.5:scaleFactor+0.01;
-			if (scaleFactor >= 0.5)
+			scaleFactor = scaleFactor >= maxScaleFactor ? maxScaleFactor :scaleFactor+0.01;
+			if (scaleFactor >= maxScaleFactor)
 				state = IDLE;
 		}
 	}
@@ -535,6 +521,17 @@ public:
 			vertices.push_back(points[indices[i]]);
 		}
 		return vertices;
+	}
+
+	void detectCollision(Anivia &anivia)
+	{
+		float distance = 0.0;
+		distance = glm::distance(position, anivia.position);
+		if (distance <= anivia.safeDistance)
+		{
+			std::cerr << "aaaaaa" << std::endl;
+			anivia.state = DEAD;
+		}
 	}
 
 	void detectCollision(Enemy &enemy)
