@@ -56,6 +56,7 @@ std::vector<Enemy> enemies;
 Shape flame, icicleDiamond;
 std::vector<Shape> icicles;
 std::vector<Shape> flames;
+std::vector<Shape> lifeCrystals;
 int currentIcicle = 0;
 int currentFlame = 0;
 
@@ -318,7 +319,7 @@ void initIcicles(std::vector<Shape> &icicles)
 	icicles[0].state = LOADING;
 }
 
-void initIcicleDiamond(Shape &shape)
+void initLifeCrystal(Shape &shape)
 {
 	const int vertexNumber = 4;
 	shape.moveSpeed = 3;
@@ -350,6 +351,17 @@ void initIcicleDiamond(Shape &shape)
 	}
 	shape.indices = { 0,1,3,1,2,3 };
 	shape.vertices = shape.generateVertices();
+}
+
+void initLifeCrystals(std::vector<Shape> &crystals)
+{
+	Shape shape;
+	initLifeCrystal(shape);
+	for (int i = 0; i < 3; i++)
+	{
+		shape.offset.x += 1;
+		crystals.push_back(shape);
+	}
 }
 
 void initFlame(Shape &shape)
@@ -405,6 +417,8 @@ void initFlames(std::vector<Shape> &flames)
 	}
 	flames[0].state = LOADING;
 }
+
+
 
 void initEnemy(Enemy &enemy)
 {
@@ -997,6 +1011,29 @@ void loadIcicle(Shape &icicle)
 	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+	glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
+	glEnableVertexAttribArray(8);
+}
+
+void loadCrystal(Shape &crystal)
+{
+	crystal.loadTexture("icicle.png");
+	glGenBuffers(1, &crystal.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, crystal.vbo);
+	glBufferData(GL_ARRAY_BUFFER, crystal.vertices.size() * sizeof(VertexBasic), crystal.vertices.data(), GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &crystal.vao);
+	glBindVertexArray(crystal.vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, crystal.vbo);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, pos)));
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, crystal.vbo);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, normal)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, crystal.vbo);
 	glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(VertexBasic), reinterpret_cast<void*>(offsetof(VertexBasic, texCoor)));
 	glEnableVertexAttribArray(8);
 }
