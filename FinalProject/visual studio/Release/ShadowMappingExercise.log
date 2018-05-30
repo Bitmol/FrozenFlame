@@ -14,35 +14,36 @@ d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(93): warning C4244: 
 d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(94): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
 d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(248): warning C4305: “=”: 从“double”到“float”截断
 d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(258): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(292): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(292): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(333): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(333): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(371): warning C4838: 从“double”转换到“float”需要收缩转换
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(371): warning C4305: “初始化”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(411): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(413): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(261): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(293): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(293): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(334): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(334): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(372): warning C4838: 从“double”转换到“float”需要收缩转换
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(372): warning C4305: “初始化”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(412): warning C4305: “=”: 从“double”到“float”截断
 d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(414): warning C4305: “=”: 从“double”到“float”截断
 d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(415): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(769): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1193): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1198): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1284): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1297): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1306): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1325): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1373): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1381): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1440): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1460): warning C4305: “=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1483): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1486): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1488): warning C4305: “-=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1489): warning C4305: “+=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1502): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1505): warning C4018: “<”: 有符号/无符号不匹配
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1507): warning C4305: “+=”: 从“double”到“float”截断
-d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1508): warning C4305: “-=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(416): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(770): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1194): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1199): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1285): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1298): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1307): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1326): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1375): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1383): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1442): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1462): warning C4305: “=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1485): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1488): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1490): warning C4305: “-=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1491): warning C4305: “+=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1504): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1507): warning C4018: “<”: 有符号/无符号不匹配
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1509): warning C4305: “+=”: 从“double”到“float”截断
+d:\users\gizzl\documents\github\3dcga\finalproject\main.cpp(1510): warning C4305: “-=”: 从“double”到“float”截断
 LINK : warning LNK4098: 默认库“LIBCMT”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
   正在生成代码
   已完成代码的生成

@@ -258,6 +258,7 @@ void initBoss(Boss &boss)
 	boss.rotateAngle = 3.14159;
 	boss.safeDistance = 2.0;
 	boss.coolDownTime = 3.0;
+	boss.mixFactor.increment = 0.05;
 	mesh.loadMesh("boss.obj");
 	boss.vertices = formatMeshVertices(mesh.vertices, mesh.triangles);
 	boss.simplifiedVertices.push_back(boss.vertices);
@@ -1331,6 +1332,7 @@ int main() {
 			if (flame.state == TRIGGERED)
 			{
 				flame.state = SHOT;
+				boss.mixFactor.attack = 1.0;
 			}
 			else if (flame.state == SHOT)
 			{
