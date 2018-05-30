@@ -43,6 +43,14 @@ struct Camera
 		return pMatrix() * vMatrix();
 	}
 
+	glm::mat4 voMatrix() const
+	{
+		glm::mat4 oMatrix;
+		oMatrix = glm::ortho<float>(-5.0, 5.0, -5, 5,0, 30);
+		return oMatrix * vMatrix();
+	}
+
+
 	void updatePosition(glm::vec3 speed)
 	{
 		forward = glm::normalize(forward);

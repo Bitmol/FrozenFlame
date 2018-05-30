@@ -38,6 +38,7 @@ Mesh mesh;
 Mesh simplified;
 Grid grid;
 
+bool lightView = false;
 
 double lastFrameTime = 0.0;
 double const maxFrameRate = 60;
@@ -169,7 +170,7 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		boss.state = IDLE;
 		break;
 	case GLFW_KEY_2:
-		anivia.state = ATTACK;
+		if (action == GLFW_PRESS) lightView = !lightView;
 		break;
 	case GLFW_KEY_3:
 		boss.state = DAMAGE2;
@@ -1218,6 +1219,11 @@ int main() {
 	//mainCamera.forward  = -mainCamera.position;
 	mainCamera.forward = glm::vec3(0.0f, -1.0f, -0.0f);
 
+	Camera lightSource;
+	lightSource.aspect = WIDTH / (float)HEIGHT;
+	lightSource.position = glm::vec3(-3.0f, 10.0f, 0.1f);
+	lightSource.forward = -lightSource.position;
+
 	StateType lastState = IDLE;
 
 	// Main loop
@@ -1291,16 +1297,44 @@ int main() {
 			glViewport(0, 0, SHADOWTEX_WIDTH, SHADOWTEX_HEIGHT);
 
 			// Execute draw command
-			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+			//glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 
 
 			// .... HERE YOU MUST ADD THE CORRECT UNIFORMS FOR RENDERING THE SHADOW MAP
-
+			glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(lightSource.voMatrix()));
 			// Bind vertex data
-			glBindVertexArray(vao);
 
-			// Execute draw command
-			glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+			glBindVertexArray(anivia.vao);
+			anivia.passUniform(shadowProgram);
+			glDrawArrays(GL_TRIANGLES, 0, anivia.vertices.size());
+
+
+			for (int i = 0; i < enemies.size(); i++)
+			{
+				Enemy &enemy = enemies[i];
+				glBindVertexArray(enemy.vao);
+				enemy.passUniform(shadowProgram);
+				glDrawArrays(GL_TRIANGLES, 0, enemy.vertices.size());
+			}
+
+			for (int j = 0; j < icicles.size(); j++)
+			{
+				Shape & icicle = icicles[j];
+				for (int i = 0; i < icicle.vertices.size(); i++)
+				{
+					icicle.vertices[i].texCoor.x -= 0.001;
+					icicle.vertices[i].texCoor.y += 0.001;
+				}
+				{
+					glBindBuffer(GL_ARRAY_BUFFER, icicle.vbo);
+					glBufferSubData(GL_ARRAY_BUFFER, 0, icicle.vertices.size() * sizeof(VertexBasic), icicle.vertices.data());
+					//glBindVertexArray(terrain.vao);
+				}
+				glBindVertexArray(icicle.vao);
+				icicle.passUniform(shadowProgram);
+				glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
+			}
 
 			// Unbind the off-screen framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -1308,14 +1342,25 @@ int main() {
 
 		// Bind the shader
 		glUseProgram(mainProgram); 
+		glm::mat4 mvp;
+		if (lightView == false)
+		{
+			updateCamera(mainCamera);
+			mvp = mainCamera.vpMatrix();
+		}
+		else
+		{
 
-		updateCamera(mainCamera);
-		
-		glm::mat4 mvp = mainCamera.vpMatrix();
+			updateCamera(lightSource);
+
+			mvp = lightSource.voMatrix();
+		}
 
 		glUniformMatrix4fv(glGetUniformLocation(mainProgram, "mvp"), 1, GL_FALSE, glm::value_ptr(mvp));
 		glUniform3fv(glGetUniformLocation(mainProgram, "viewPos"), 1, glm::value_ptr(mainCamera.position));
 		glUniform1f(glGetUniformLocation(mainProgram, "time"), static_cast<float>(glfwGetTime()));
+		glUniformMatrix4fv(glGetUniformLocation(mainProgram, "lightMVP"), 1, GL_FALSE, glm::value_ptr(lightSource.voMatrix()));
+		glUniform3fv(glGetUniformLocation(mainProgram, "lightPos"), 1, glm::value_ptr(lightSource.position));
 		
 		
 
@@ -1357,21 +1402,21 @@ int main() {
 			glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
 		}
 		glBindVertexArray(boss.vao);
-		boss.passUniform(mainProgram, true, false, true);
+		boss.passUniform(mainProgram, true, true, false);
 		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
 		
 		
 		float scaleFactor = boss.scaleFactor;
-		boss.scaleFactor = 0.15;
-		boss.position.z -= 0.5;
+		boss.scaleFactor = 0.2;
+		boss.position.z -= 0;
 		boss.position.y -= 1;
 
 		glBindVertexArray(boss.vao_tex);
-		boss.passUniform(mainProgram, false, true, false);
+		boss.passUniform(mainProgram, false, false, true);
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
 		
 		boss.scaleFactor = scaleFactor;
-		boss.position.z += 0.5;
+		boss.position.z += 0;
 		boss.position.y += 1;
 		// update terrain vertices
 		{

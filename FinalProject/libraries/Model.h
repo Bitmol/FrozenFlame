@@ -118,6 +118,7 @@ public:
 
 		glUniform1f(glGetUniformLocation(program, "onlyBody"), false);
 	}
+
 	glm::vec2 getScreenCoor(Camera camera)
 	{
 		glm::vec4 homoScreenCoor = camera.vpMatrix()*glm::vec4(position, 1.0);
