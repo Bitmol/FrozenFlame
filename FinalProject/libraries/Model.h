@@ -54,8 +54,8 @@ struct AniviaVertex :VertexBasic
 struct BossVertex :VertexBasic {
 	glm::vec3 pos_idle;
 	glm::vec3 normal_idle;
-	glm::vec3 pos_dead;
-	glm::vec3 normal_dead;
+	glm::vec3 pos_attack;
+	glm::vec3 normal_attack;
 };
 
 class Model
@@ -114,6 +114,9 @@ public:
 		glUniform1i(glGetUniformLocation(program, "tex"), textureNumber);
 		glUniform1f(glGetUniformLocation(program, "useShadow"), false);
 		glUniform1f(glGetUniformLocation(program, "uniColor"), false);
+		glUniform1f(glGetUniformLocation(program, "onlyWings"), false);
+
+		glUniform1f(glGetUniformLocation(program, "onlyBody"), false);
 	}
 	glm::vec2 getScreenCoor(Camera camera)
 	{
@@ -199,13 +202,18 @@ class Boss : public Character
 {
 public:
 	std::vector<BossVertex> vertices;
-	std::vector<BossVertex> emptyVertices;
+	GLuint vao_tex, vbo_tex;
+	std::vector<BossVertex> texturedVertices;
 	std::vector<std::vector<BossVertex>> simplifiedVertices;
-	void passUniform(GLuint program)
+	void passUniform(GLuint program, bool uniColor = true, bool onlyWings = false, bool onlyBody = false)
 	{
 		Model::passUniform(program);
 
-		glUniform1f(glGetUniformLocation(program, "uniColor"), true);
+		glUniform1f(glGetUniformLocation(program, "uniColor"), uniColor);
+
+		glUniform1f(glGetUniformLocation(program, "onlyWings"), onlyWings);
+
+		glUniform1f(glGetUniformLocation(program, "onlyBody"), onlyBody);
 	}
 	void update()
 	{
@@ -512,8 +520,8 @@ public:
 			rotateAxis = { 0, 1, 0 };
 			rotateAngle = -angle;
 			position = followPosition ;
-			scaleFactor = scaleFactor >= 0.75? 0.75:scaleFactor+0.05;
-			if (scaleFactor >= 0.75)
+			scaleFactor = scaleFactor >= 0.5? 0.5:scaleFactor+0.01;
+			if (scaleFactor >= 0.5)
 				state = IDLE;
 		}
 	}

@@ -60,8 +60,8 @@ Terrain terrain(20, 20, lightDir);
 
 
 // Configuration
-const int WIDTH = 800;
-const int HEIGHT = 600;
+const int WIDTH = 600;
+const int HEIGHT = 800;
 
 std::vector<BossVertex> formatMeshVertices(std::vector<Vertex> vertices, std::vector<Triangle> triangles)
 {
@@ -246,6 +246,7 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 
 void initAnivia(Anivia &anivia)
 {
+	anivia.position.z = -3;
 	anivia.coolDownTime = 1.0;
 	anivia.mixFactor.increment = 0.05;
 }
@@ -253,7 +254,7 @@ void initAnivia(Anivia &anivia)
 void initBoss(Boss &boss)
 {
 	boss.state = IDLE;
-	boss.position = { 0,1,4 };
+	boss.position = { 0,1,2 };
 	boss.scaleFactor = 3;
 	boss.rotateAxis = { 0,1,0 };
 	boss.rotateAngle = 3.14159;
@@ -395,10 +396,11 @@ void initFlame(Shape &shape)
 void initEnemy(Enemy &enemy)
 {
 	enemy.position = { 0,0,4 };
-	enemy.scaleFactor = 0.3;
+	enemy.scaleFactor = 0.2;
 	enemy.rotateAxis = { 0,1,0 };
 	enemy.rotateAngle = 3.14159;
 	enemy.movement.y = -0.03;
+	enemy.mixFactor.increment = 0.07;
 }
 
 void initEnemies(std::vector<Enemy> &enemies)
@@ -761,7 +763,7 @@ void loadEnemies(std::vector<Enemy> &enemies)
 int loadBoss(Boss &boss)
 {
 
-	/////// handle the vertices of enemy
+	/////// for simplified model
 	{
 		glGenBuffers(1, &boss.vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
@@ -777,6 +779,154 @@ int loadBoss(Boss &boss)
 		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, normal)));
 		glEnableVertexAttribArray(1);
+	}
+
+
+	////// LOAD MODEL WITH TEXTURE FOR ANIMATION
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string err;
+	//load
+	{
+		int vertexCounter = 0;
+		// load initial pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "boss_low.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				BossVertex vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				// Retrieve coordinates for texture
+				vertex.texCoor = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				boss.texturedVertices.push_back(vertex);
+			}
+		}
+
+		//load idle pose (animation between initial and idle pose)
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "boss_high.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				boss.texturedVertices[vertexCounter].pos_idle = vertex.pos;
+				boss.texturedVertices[vertexCounter].normal_idle = vertex.normal;
+				vertexCounter++;
+			}
+		}
+
+		//load dead pose
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, "boss_attack.obj")) {
+			std::cerr << err << std::endl;
+			return EXIT_FAILURE;
+		}
+		// Read triangle vertices from OBJ file
+		vertexCounter = 0;
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				VertexBasic vertex = {};
+
+				// Retrieve coordinates for vertex by index
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				// Retrieve components of normal by index
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+				boss.texturedVertices[vertexCounter].pos_attack = vertex.pos;
+				boss.texturedVertices[vertexCounter].normal_attack = vertex.normal;
+				vertexCounter++;
+			}
+		}
+	}
+
+
+	// load texture for enemy
+	boss.loadTexture("legenddragon-fire.png");
+
+	/////// handle the vertices of boss
+	{
+		glGenBuffers(1, &boss.vbo_tex);
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glBufferData(GL_ARRAY_BUFFER, boss.texturedVertices.size() * sizeof(BossVertex), boss.texturedVertices.data(), GL_STATIC_DRAW);
+
+		glGenVertexArrays(1, &boss.vao_tex);
+		glBindVertexArray(boss.vao_tex);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, pos)));
+		glEnableVertexAttribArray(0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, normal)));
+		glEnableVertexAttribArray(1);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, pos_idle)));
+		glEnableVertexAttribArray(2);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, normal_idle)));
+		glEnableVertexAttribArray(3);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, pos_attack)));
+		glEnableVertexAttribArray(4);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, normal_attack)));
+		glEnableVertexAttribArray(5);
+
+		glBindBuffer(GL_ARRAY_BUFFER, boss.vbo_tex);
+		glVertexAttribPointer(8, 2, GL_FLOAT, GL_FALSE, sizeof(BossVertex), reinterpret_cast<void*>(offsetof(BossVertex, texCoor)));
+		glEnableVertexAttribArray(8);
 	}
 	return 0;
 }
@@ -1205,31 +1355,36 @@ int main() {
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, boss.vbo);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, boss.vertices.size() * sizeof(BossVertex), boss.vertices.data());
-			//glBindVertexArray(terrain.vao);
-
 		}
 		glBindVertexArray(boss.vao);
-		boss.passUniform(mainProgram);
+		boss.passUniform(mainProgram, true, false, true);
 		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
+		
+		
+		float scaleFactor = boss.scaleFactor;
+		boss.scaleFactor = 0.15;
+		boss.position.z -= 0.5;
+		boss.position.y -= 1;
 
-
-
-
+		glBindVertexArray(boss.vao_tex);
+		boss.passUniform(mainProgram, false, true, false);
+		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
+		
+		boss.scaleFactor = scaleFactor;
+		boss.position.z += 0.5;
+		boss.position.y += 1;
 		// update terrain vertices
 		{
 			glBindBuffer(GL_ARRAY_BUFFER, terrain.vbo);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, terrain.vertices.size() * sizeof(terrainVertex), terrain.vertices.data());
 			//glBindVertexArray(terrain.vao);
-
 		}
 
 		glBindVertexArray(terrain.vao);
 		terrain.passUniform(mainProgram);
 		glDrawArrays(GL_TRIANGLES, 0, terrain.vertices.size());
-
-
+		
 		// update icicle vertices
-
 		for (int j = 0; j < icicles.size(); j++)
 		{
 			Shape & icicle = icicles[j];
@@ -1247,7 +1402,6 @@ int main() {
 			icicle.passUniform(mainProgram);
 			glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
 		}
-
 		
 
 		// Present result to the screen

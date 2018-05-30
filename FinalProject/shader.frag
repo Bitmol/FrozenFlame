@@ -9,6 +9,8 @@ layout(location = 5) uniform vec3 lightPos = vec3(3,3,3);
 layout(location = 9) uniform sampler2D tex;
 layout(location = 14) uniform bool useShadow = false;
 layout(location = 15) uniform bool uniColor = false;
+layout(location = 16) uniform bool onlyWings = false;
+layout(location = 17) uniform bool onlyBody = false;
 
 // Output for on-screen color
 layout(location = 0) out vec4 outColor;
@@ -21,6 +23,16 @@ in vec3 fragShadow;
 
 void main() {
 
+	if(onlyWings == true)
+	{
+		if (fragPos.x > -0.5 && fragPos.x < 0.5)
+			discard;
+	}
+	if(onlyBody == true)
+	{
+		if (fragPos.x < -0.5 || fragPos.x > 0.5)
+			discard;
+	}
 	// Output the normal as color
 	const vec3 lightDir = normalize(lightPos - fragPos);
 
