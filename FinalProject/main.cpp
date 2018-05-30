@@ -328,15 +328,16 @@ void initLifeCrystal(Shape &shape)
 {
 	const int vertexNumber = 4;
 	shape.moveSpeed = 3;
-	shape.scaleFactor = 1;
+	shape.scaleFactor = 0.3;
 	shape.rotateAxis = { 0,1,0 };
-	shape.offset = { 0,1,1 };
+	shape.offset = { 0,0,0 };
+	shape.position = { -2,2,-3 };
 	float vertices[vertexNumber][3] =
 	{
 		0, 0, -0.8,//Vertex 0
-		0.2, 0, 0, // vertex 1
+		0.6, 0, 0, // vertex 1
 		0, 0, 0.8,  // Vertex 2
-		-0.2, 0, 0  // Vertex 3
+		-0.6, 0, 0  // Vertex 3
 	};
 	float texCoor[vertexNumber][2] =
 	{
@@ -364,7 +365,7 @@ void initLifeCrystals(std::vector<Shape> &crystals)
 	initLifeCrystal(shape);
 	for (int i = 0; i < 3; i++)
 	{
-		shape.offset.x += 1;
+		shape.position.z += 0.5;
 		crystals.push_back(shape);
 	}
 }
@@ -1072,6 +1073,7 @@ int main() {
 	initAnivia(anivia);
 	initIcicles(icicles);
 	initFlames(flames);
+	initLifeCrystals(lifeCrystals);
 	//initEnemy(enemy);
 	initBoss(boss);
 	initEnemies(enemies);
@@ -1112,7 +1114,6 @@ int main() {
 
 	GLuint mainProgram = glCreateProgram();
 	GLuint shadowProgram = glCreateProgram();
-	GLuint terrainProgram = glCreateProgram();
 
 
 	////////////////// Load and compile main shader program
@@ -1203,16 +1204,6 @@ int main() {
 			return EXIT_FAILURE;
 		}
 
-		// Combine vertex and fragment shaders into single shader program
-		glAttachShader(terrainProgram, vertexShader);
-		glAttachShader(terrainProgram, fragmentShader);
-		glLinkProgram(terrainProgram);
-
-		if (!checkProgramErrors(terrainProgram)) {
-			std::cerr << "Main program failed to link!" << std::endl;
-			std::cout << "Press enter to close."; getchar();
-			return EXIT_FAILURE;
-		}
 	}
 	////////////////////////// Load vertices of model
 	tinyobj::attrib_t attrib;
@@ -1237,10 +1228,15 @@ int main() {
 	{
 		loadIcicle(icicles[i]);
 	}
-	
+
 	for (int i = 0; i < flames.size(); i++)
 	{
 		loadFlame(flames[i]);
+	}
+
+	for (int i = 0; i < lifeCrystals.size(); i++)
+	{
+		loadCrystal(lifeCrystals[i]);
 	}
 
 
@@ -1378,7 +1374,15 @@ int main() {
 			}
 			else if (flame.state == SHOT)
 			{
-				flame.detectCollision(anivia);
+				bool damaged = flame.detectCollision(anivia);
+				if (damaged)
+				{
+					if (lifeCrystals.size() == 0)
+						anivia.state = DEAD;
+					else
+						lifeCrystals.pop_back();
+				}
+					
 			}
 
 		}
@@ -1583,6 +1587,24 @@ int main() {
 			//std::cerr << flame.state;
 		}
 
+		for (int j = 0; j < lifeCrystals.size(); j++)
+		{
+			Shape & crystal = lifeCrystals[j];
+			//for (int i = 0; i < flame.vertices.size(); i++)
+			//{
+			//	flame.vertices[i].texCoor.x += 0.01;
+			//	flame.vertices[i].texCoor.y -= 0.01;
+			//}
+			{
+				glBindBuffer(GL_ARRAY_BUFFER, crystal.vbo);
+				glBufferSubData(GL_ARRAY_BUFFER, 0, crystal.vertices.size() * sizeof(VertexBasic), crystal.vertices.data());
+				//glBindVertexArray(terrain.vao);
+			}
+			glBindVertexArray(crystal.vao);
+			crystal.passUniform(mainProgram);
+			glDrawArrays(GL_TRIANGLES, 0, crystal.vertices.size());
+			//std::cerr << flame.state;
+		}
 
 		// Present result to the screen
 		glfwSwapBuffers(window);

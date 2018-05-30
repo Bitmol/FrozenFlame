@@ -524,15 +524,18 @@ public:
 		return vertices;
 	}
 
-	void detectCollision(Anivia &anivia)
+	bool detectCollision(Anivia &anivia)
 	{
 		float distance;
 		distance = glm::distance(position, anivia.position);
 		if (distance <= anivia.safeDistance)
 		{
 			//std::cerr << "aaaaaa" << std::endl;
-			anivia.state = DEAD;
+			//anivia.state = DEAD;
+			state = WAITING;
+			return true;
 		}
+		return false;
 	}
 
 	void detectCollision(Enemy &enemy)
@@ -552,6 +555,7 @@ public:
 		distance = glm::distance(position, enemy.position);
 		if (distance <= enemy.safeDistance)
 		{
+			state = WAITING;
 			switch (enemy.state)
 			{
 			case IDLE:
