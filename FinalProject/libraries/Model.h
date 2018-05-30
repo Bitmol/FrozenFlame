@@ -19,6 +19,7 @@ enum StateType
 
 struct MixFactor
 {
+
 	float idle = 0.0;
 	float attack = 0.0;
 	float dead = 0.0;
@@ -128,9 +129,12 @@ class Character: public Model
 public:
 	StateType state = IDLE;
 	MixFactor mixFactor;
+	MixFactor mixFactorInterval = {1.0, 1.0, 1.0, 1.0};
 	float moveSpeed = 0.1;
 	glm::vec3 movement = { 0,0,0 };
 	float safeDistance = 1.0;
+	float coolDownTime = 1.0;
+	float coolDownCounter;
 	
 	void move(Camera camera)
 	{
@@ -141,7 +145,7 @@ public:
 		position += right * movement.x + realUp * movement.y + forward * movement.z;
 	}
 
-	void updateMixFactor()
+	void updateMixFactor(double timeInterval)
 	{
 		if (state == IDLE)
 		{
@@ -158,8 +162,11 @@ public:
 		}
 		else if (state == ATTACK)
 		{
+			coolDownCounter -= timeInterval;
 			if (mixFactor.attack <= 1.0)
 				mixFactor.attack += abs(mixFactor.increment);
+			if (coolDownCounter <= 0)
+				state = IDLE;
 		}
 		else if (state == DEAD)
 		{

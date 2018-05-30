@@ -50,6 +50,7 @@ int Model::textureCount = 1;
 Anivia anivia;
 Enemy enemy;
 Boss boss;
+std::vector<Enemy> enemies;
 
 Shape flame, icicleDiamond;
 std::vector<Shape> icicles;
@@ -198,14 +199,26 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 		//std::cerr << currentIcicle << std::endl;
 		if (action == GLFW_PRESS)
 		{
-			icicles[currentIcicle].state = TRIGGERED;
+			if (anivia.state == IDLE && anivia.coolDownCounter <= 0)
+			{
+				icicles[currentIcicle].state = TRIGGERED;
+
+			}
+			
 		}
 		if (action == GLFW_RELEASE)
 		{
-			icicles[currentIcicle].state = SHOT;
-			currentIcicle++;
-			currentIcicle %= icicles.size();
-			icicles[currentIcicle].state = LOADING;
+			if (anivia.state == IDLE && anivia.coolDownCounter <= 0)
+			{
+
+				anivia.state = ATTACK;
+				anivia.coolDownCounter = anivia.coolDownTime;
+				icicles[currentIcicle].state = SHOT;
+				currentIcicle++;
+				currentIcicle %= icicles.size();
+				icicles[currentIcicle].state = LOADING;
+
+			}
 			
 		}
 		break;
@@ -230,6 +243,11 @@ void cursorPosHandler(GLFWwindow* window, double xpos, double ypos)
 }
 
 //declaration
+
+void initAnivia(Anivia &anivia)
+{
+	anivia.coolDownTime = 1.0;
+}
 
 void initBoss(Boss &boss)
 {
@@ -375,12 +393,21 @@ void initFlame(Shape &shape)
 }
 void initEnemy(Enemy &enemy)
 {
-	enemy.position = { 0,0,3 };
+	enemy.position = { 0,0,5 };
 	enemy.scaleFactor = 0.3;
 	enemy.rotateAxis = { 0,1,0 };
 	enemy.rotateAngle = 3.14159;
 	enemy.movement.y = -0.01;
-	enemy.mixFactor.increment = 0.1;
+}
+
+void initEnemies(std::vector<Enemy> &enemies)
+{
+	Enemy enemy;
+	initEnemy(enemy);
+	for (int i = 0; i < 3; i++)
+	{
+		enemy.position.x = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	}
 }
 int loadAnivia(Anivia &anivia)
 {
@@ -801,6 +828,7 @@ void loadIcicle(Shape &icicle)
 
 int main() {
 	//init
+	initAnivia(anivia);
 	initIcicles();
 	initEnemy(enemy);
 	initBoss(boss);
@@ -1046,10 +1074,10 @@ int main() {
 
 		//update 
 		anivia.move(mainCamera);
-		anivia.updateMixFactor();
+		anivia.updateMixFactor(timeInterval);
 		
 		enemy.move(mainCamera);
-		enemy.updateMixFactor();
+		enemy.updateMixFactor(timeInterval);
 
 		boss.update();
 
