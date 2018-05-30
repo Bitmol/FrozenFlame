@@ -1518,8 +1518,41 @@ int main() {
 				glDrawArrays(GL_TRIANGLES, 0, icicle.vertices.size());
 			}
 
+
+			float scaleFactor = boss.scaleFactor;
+			boss.scaleFactor = 0.22;
+
+			boss.position.z -= 0.1;
+			boss.position.y -= 0.5;
+			glBindVertexArray(boss.vao_tex);
+			boss.passUniform(shadowProgram, false, false, false, true);
+			glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
+
+			boss.position.z += 0.1;
+			boss.position.y += 0.5;
+			boss.scaleFactor = scaleFactor;
+
+
+			for (int j = 0; j < flames.size(); j++)
+			{
+				Shape & flame = flames[j];
+				{
+					glBindBuffer(GL_ARRAY_BUFFER, flame.vbo);
+					glBufferSubData(GL_ARRAY_BUFFER, 0, flame.vertices.size() * sizeof(VertexBasic), flame.vertices.data());
+					//glBindVertexArray(terrain.vao);
+				}
+				glBindVertexArray(flame.vao);
+				flame.passUniform(shadowProgram);
+				glDrawArrays(GL_TRIANGLES, 0, flame.vertices.size());
+				//std::cerr << flame.state;
+			}
+
+
 			// Unbind the off-screen framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
 		}
 
 		// Bind the shader
