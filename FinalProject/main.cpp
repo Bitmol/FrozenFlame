@@ -1401,7 +1401,15 @@ int main() {
 			Enemy &enemy = enemies[i];
 			enemy.move(mainCamera);
 			enemy.updateMixFactor(timeInterval);
-
+			bool contacted = false;
+			contacted = enemy.detectCollision(anivia);
+			if (contacted)
+			{
+				if (lifeCrystals.size() == 0)
+					anivia.state = DEAD;
+				else
+					lifeCrystals.pop_back();
+			}
 		}
 		
 		boss.updateMixFactor(timeInterval);

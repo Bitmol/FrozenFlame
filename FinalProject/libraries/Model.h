@@ -197,6 +197,20 @@ class Enemy : public Character
 {
 public:
 	std::vector<EnemyVertex> vertices;
+	bool detectCollision(Anivia &anivia)
+	{
+		if (state == DEAD)
+			return false;
+		float distance;
+		distance = glm::distance(position, anivia.position);
+		if (distance <= anivia.safeDistance && anivia.state != DEAD)
+		{
+			state = DEAD;
+			return true;
+		}
+		return false;
+	}
+
 };
 
 class Boss : public Character
