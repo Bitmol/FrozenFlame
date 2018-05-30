@@ -62,6 +62,11 @@ int currentIcicle = 0;
 int currentFlame = 0;
 bool bossHit = false;
 
+//zoom camera parameters
+float camX = 0.0;
+float camY = 12.0;
+float camZ = 0.0;
+
 Terrain terrain(20, 20, lightDir);
 
 
@@ -195,6 +200,9 @@ void keyboardHandler(GLFWwindow* window, int key, int scancode, int action, int 
 	case GLFW_KEY_D:
 		if (action == GLFW_PRESS || action == GLFW_REPEAT)movement.x = moveSpeed;
 		if (action == GLFW_RELEASE)movement.x = 0.0;
+		break;
+	case GLFW_KEY_ESCAPE:
+		exit(0);
 		break;
 	case GLFW_KEY_SPACE:
 		if (action == GLFW_PRESS)
@@ -1373,6 +1381,7 @@ int main() {
 	Camera mainCamera;
 	mainCamera.aspect = WIDTH / (float)HEIGHT;
 	mainCamera.position = glm::vec3(0.0f, 12.0f, 0.0f);
+	//mainCamera.position = glm::vec3(0.0f, 9.5f, 2.5f);
 	//mainCamera.forward  = -mainCamera.position;
 	mainCamera.forward = glm::vec3(0.0f, -1.0f, -0.0f);
 
@@ -1380,6 +1389,7 @@ int main() {
 	lightSource.aspect = WIDTH / (float)HEIGHT;
 	lightSource.position = glm::vec3(-3.0f, 10.0f, 0.1f);
 	lightSource.forward = -lightSource.position;
+
 
 	StateType lastState = IDLE;
 	double lastShot = glfwGetTime();
@@ -1420,6 +1430,14 @@ int main() {
 		boss.update(); // update the vertices according to state
 
 		terrain.update();
+
+		//zoom effect after boss death
+		if (boss.state == DEAD) {
+			if(mainCamera.position.y>=9.5){
+				glm::vec3 zoom = { 0, 0.01, 0.01 };
+				mainCamera.updatePosition(zoom);
+			}
+		}
 		
 		for(int i = 0; i < icicles.size(); i++)
 		{
