@@ -30,7 +30,7 @@ void main() {
 	}
 	if(onlyBody == true)
 	{
-		if (fragPos.z < 1.95 && abs(fragPos.x) < 0.5 && fragPos.y > 1.1)
+		if (fragPos.z < 2.22 && abs(fragPos.x) < 0.5 && fragPos.y > 1.7)
 			discard;
 	}
 	// Output the normal as color

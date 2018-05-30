@@ -58,6 +58,7 @@ std::vector<Shape> icicles;
 std::vector<Shape> flames;
 int currentIcicle = 0;
 int currentFlame = 0;
+bool bossHit = false;
 
 Terrain terrain(20, 20, lightDir);
 
@@ -267,6 +268,10 @@ void initBoss(Boss &boss)
 	{
 		Mesh simplified;
 		simplified = grid.simplifyMesh(mesh, 70 - i * 10);
+		for (int y = 0; y < simplified.vertices.size(); y++) {
+			simplified.vertices[y].p[1] += 0.30;
+			simplified.vertices[y].p[2] -= 0.17;
+		}
 
 		boss.simplifiedVertices.push_back(formatMeshVertices(simplified.vertices, simplified.triangles));
 	}
@@ -1458,14 +1463,35 @@ int main() {
 		//glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
 		//
 		//
+
+		if (boss.state == IDLE) {
+			bossHit = false;
+		}
+		else {
+			bossHit = true;
+		}
+
+		glBindVertexArray(boss.vao);
+		if (boss.state != IDLE) {
+			boss.passUniform(mainProgram, true, true, false);
+		}
+		//boss.passUniform(mainProgram, true, true, false);
+		glDrawArrays(GL_TRIANGLES, 0, boss.vertices.size());
+
 		float scaleFactor = boss.scaleFactor;
 		boss.scaleFactor = 0.2;
 		boss.position.z -= 0;
 		boss.position.y -= 1;
 
 		glBindVertexArray(boss.vao_tex);
-		boss.passUniform(mainProgram, false, false, false);
+		boss.passUniform(mainProgram, false, false, bossHit);
 		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());
+
+		
+
+		/*glBindVertexArray(boss.vao_tex);
+		boss.passUniform(mainProgram, false, false, false);
+		glDrawArrays(GL_TRIANGLES, 0, boss.texturedVertices.size());*/
 		
 		boss.scaleFactor = scaleFactor;
 		boss.position.z += 0;
