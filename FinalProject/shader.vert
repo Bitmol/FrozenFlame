@@ -48,7 +48,7 @@ void main() {
 	vec3 normal_current = normal;
 
 	mat4 rMatrix = rotationMatrix(rotateAxis, rotateAngle);
-	vec4 tmp;
+	
 //	tmp = rMatrix * vec4(pos, 1.0);
 //	pos_current = tmp.xyz;
 //	tmp = rMatrix * vec4(normal, 1.0);
@@ -64,6 +64,7 @@ void main() {
 
 	pos_current = mat3(scaleFactor)*pos_current;
 	
+	vec4 tmp;
 	tmp = rMatrix * vec4(pos_current, 1.0);
 	pos_current = tmp.xyz;
 	tmp = rMatrix * vec4(normal_current, 1.0);

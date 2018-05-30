@@ -152,9 +152,9 @@ public:
 	{
 		if (state == IDLE)
 		{
-			if (mixFactor.attack >= 0)
+			if (mixFactor.attack > 0)
 				mixFactor.attack -= abs(mixFactor.increment);
-			if (mixFactor.dead >= 0)
+			if (mixFactor.dead > 0)
 				mixFactor.dead -= abs(mixFactor.increment);
 
 			if (mixFactor.idle > 1.0)
@@ -166,14 +166,14 @@ public:
 		else if (state == ATTACK)
 		{
 			coolDownCounter -= timeInterval;
-			if (mixFactor.attack <= 1.0)
+			if (mixFactor.attack < 1.0)
 				mixFactor.attack += abs(mixFactor.increment);
 			if (coolDownCounter <= 0)
 				state = IDLE;
 		}
 		else if (state == DEAD)
 		{
-			if (mixFactor.dead <= 1.0)
+			if (mixFactor.dead < 1.0)
 				mixFactor.dead += abs(mixFactor.increment);
 		}
 	}
@@ -210,10 +210,11 @@ public:
 	{
 		Model::passUniform(program);
 
+		glUniform1f(glGetUniformLocation(program, "mixFactor_idle"), mixFactor.idle);
+		glUniform1f(glGetUniformLocation(program, "mixFactor_attack"), mixFactor.attack);
+		glUniform1f(glGetUniformLocation(program, "mixFactor_dead"), mixFactor.dead);
 		glUniform1f(glGetUniformLocation(program, "uniColor"), uniColor);
-
 		glUniform1f(glGetUniformLocation(program, "onlyWings"), onlyWings);
-
 		glUniform1f(glGetUniformLocation(program, "onlyBody"), onlyBody);
 	}
 	void update()
@@ -525,11 +526,11 @@ public:
 
 	void detectCollision(Anivia &anivia)
 	{
-		float distance = 0.0;
+		float distance;
 		distance = glm::distance(position, anivia.position);
 		if (distance <= anivia.safeDistance)
 		{
-			std::cerr << "aaaaaa" << std::endl;
+			//std::cerr << "aaaaaa" << std::endl;
 			anivia.state = DEAD;
 		}
 	}

@@ -558,7 +558,7 @@ int loadAnivia(Anivia &anivia)
 				};
 
 				anivia.vertices[vertexCounter].pos_dead = vertex.pos;
-				anivia.vertices[vertexCounter].pos_dead = vertex.normal;
+				anivia.vertices[vertexCounter].normal_dead = vertex.normal;
 				vertexCounter++;
 			}
 		}
@@ -1289,7 +1289,8 @@ int main() {
 
 		}
 		
-		boss.update();
+		boss.updateMixFactor(timeInterval);
+		boss.update(); // update the vertices according to state
 
 		terrain.update();
 		
@@ -1330,7 +1331,6 @@ int main() {
 			if (flame.state == TRIGGERED)
 			{
 				flame.state = SHOT;
-				boss.state = ATTACK;
 			}
 			else if (flame.state == SHOT)
 			{
