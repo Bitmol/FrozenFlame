@@ -1165,7 +1165,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Shadow mapping practical", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Frozen Flame", nullptr, nullptr);
 	if (!window) {
 		std::cerr << "Failed to create OpenGL context!" << std::endl;
 		std::cout <<  "Press enter to close."; getchar();
